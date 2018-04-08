@@ -1,0 +1,51 @@
+{
+	# foo
+	"run_name" : "BERLIN",
+	"period_name" : "summer",
+	"start_date" : "2008-01-16 00:00:00 UTC",
+	"end_date" : "2008-02-15 00:00:00 UTC",
+	"restart" : "false",
+
+	"num_hours_per_run":24,
+	"num_hours_spin_up":12,
+	"run_as_one_job" : "true",
+	"submit_wrf_now" : "false",
+	"submit_wps_component" : "false",
+
+	"run_dir" : "/short/w22/jds563/data/WRF/${run_name}",
+
+## FIXME: currently unused
+	"pbs_queue" : "normalbw",
+	"pbs_ncpus" : "28",
+	"pbs_mem" : "128GB",
+	"pbs_walltime" : "10:00:00",
+	"pbs_name" : "BERLIN",
+	"pbs_opts" : "wd,other=gdata1,oe",
+
+	"run_script_template" : "run_script_template.sh",
+	"cleanup_script_template" : "cleanup_script_template.sh",
+	"main_script_template" : "main_script_template.sh",
+
+## FIXME: currently unused
+	"nci_modules" : "dot,pbs,intel-cc/17.0.1.132,intel-fc/17.0.1.132,netcdf/4.3.3.1,openmpi/2.0.0,nco,hdf5/1.8.10",
+
+	"only_edit_namelists" : "false",
+
+	"wps_dir" : "/home/563/jds563/programs/WPS",
+	"wrf_dir" : "/short/w22/jds563/code/WRFV_3.9.1.1/WRFV3",
+	"nml_dir" : "/home/563/jds563/projects/runWRF/${run_name}",
+	"scripts_to_copy_from_nml_dir":"add_remove_var.txt,nccopy_compress_output.sh",
+	"metem_dir" : "/short/w22/jds563/data/WRF/${run_name}/METEM",
+
+	"sst_monthly_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
+	"sst_daily_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
+	"sst_monthly_pattern" : "rtg_sst_grb_hr_0.083.%Y%m",
+	"sst_daily_pattern" : "rtg_sst_grb_hr_0.083.%Y%m%d",
+	"analysis_pattern_upper" : "/g/data1/ub4/erai/grib/oper_an_pl/fullres/%Y/ei_oper_an_pl_075x075_90N0E90S35925E_%Y%m*",
+	"analysis_pattern_surface" : "/g/data1/ub4/erai/grib/oper_an_sfc/fullres/ei_oper_an_sfc_075x075_90N0E90S35925E_%Y%m*",
+	
+	"extra_variables_file" : "${nml_dir}/add_remove_var.txt",
+	## FIXME: currently unused:
+	"vtable_file" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
+	"wrf_tables" : "${wrf_dir}/run/*{DAT,formatted,CAM,asc,TBL,dat,tbl,txt,tr}*"
+}

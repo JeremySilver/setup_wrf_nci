@@ -73,23 +73,33 @@ for configKey in defaultConfig.keys():
         config[configKey] = defaultConfig[configKey]
 
 ## add some environment variables to the config that may be needed for substitutions
-envVarsToInclude = ['HOME', 'USER', 'PROJECT', 'TMPDIR']
+envVarsToInclude = config["environment_variables_for_substitutions"].split(',')
 for envVarToInclude in envVarsToInclude:
     if envVarToInclude in os.environ.keys():
         config[envVarToInclude] = os.environ[envVarToInclude]
 
 ## do the substitutions
 avail_keys = config.keys()
-for avail_key in avail_keys:
-    key = '${%s}' % avail_key
-    value = config[avail_key]
-    for k in avail_keys:
-        if isinstance(config[k], basestring):
-            if config[k].find(key) >= 0:
-                config[k] = config[k].replace(key,value)
+iterationCount = 0
+while iterationCount < 10:
+    ## check if any entries in the config dictionary need populating
+    if any([value.find('${') >= 0 for key, value in config.iteritems()]):
+        for avail_key in avail_keys:
+            key = '${%s}' % avail_key
+            value = config[avail_key]
+            for k in avail_keys:
+                if isinstance(config[k], basestring):
+                    if config[k].find(key) >= 0:
+                        config[k] = config[k].replace(key,value)
+    else:
+        break
+    ##
+    iterationCount += 1
+
+assert iterationCount < 10, "Config key substitution exceeded iteration limit..."
 
 ## check that requisite keys are present
-requisite_keys = ["run_name","period_name", "start_date", "end_date"]
+requisite_keys = ["run_name","start_date", "end_date"]
 for requisite_key in requisite_keys:
     assert requisite_key in avail_keys, "Key {} was not in the available configuration keys".format(requisite_key)
 
@@ -102,8 +112,7 @@ for bool_key in bool_keys:
     assert config[bool_key].lower() in boolvals,'Key {} not a recognised boolean value'.format(bool_key)
     config[bool_key] = (config[bool_key].lower() in truevals)
 
-execfile("/opt/Modules/default/init/python")
-
+# execfile("/opt/Modules/default/init/python")
 
 ## make the stack size unlimited (the equivalent of `ulimit -s unlimited` in bash)
 resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
@@ -228,10 +237,10 @@ run_length_hours = (end_date - start_date).total_seconds()/3600.
 number_of_jobs = int(math.ceil(run_length_hours/float(config["num_hours_per_run"])))
 
 ## check that namelist template files are present
-WPSnmlPath = os.path.join(config["nml_dir"],'namelist.wps')
-WRFnmlPath = os.path.join(config["nml_dir"],'namelist.wrf')
-assert os.path.exists(WPSnmlPath),"File namelist.wps not found in the wps_dir folder"
-assert os.path.exists(WRFnmlPath),"File namelist.wrf not found in the wps_dir folder"
+WPSnmlPath = config["namelist_wps"]
+WRFnmlPath = config["namelist_wrf"]
+assert os.path.exists(WPSnmlPath),"File WPS namelist not found at {}".format(WPSnmlPath)
+assert os.path.exists(WRFnmlPath),"File WRF namelist not found at {}".format(WRFnmlPath)
 
 ## read the WPS
 WPSnml = f90nml.read(WPSnmlPath)
@@ -246,6 +255,8 @@ run_length_total_hours = config["num_hours_per_run"] + config["num_hours_spin_up
 print '\t\tGenerate the main coordination script'
 
 ## write out the main coordination script
+
+############## EDIT: the following are the substitutions used for the main run script
 substitutions = {'STARTDATE'   : start_date.strftime('%Y%m%d%H'),
                  'njobs'       : '{}'.format(number_of_jobs),
                  'nhours'      : '{}'.format(config['num_hours_per_run']),
@@ -253,6 +264,7 @@ substitutions = {'STARTDATE'   : start_date.strftime('%Y%m%d%H'),
                  'NUDGING'     : '{}'.format(not config['restart']).lower(),
                  'runAsOneJob' : '{}'.format(config['run_as_one_job']).lower(),
                  'RUN_DIR'     : config['run_dir'] }
+############## end edit section #####################################################
 
 ## do the substitutions
 thisScript = copy.copy(scripts['main'])
@@ -315,13 +327,13 @@ for ind_job in range(number_of_jobs):
                 dst = os.path.join(run_dir_with_date,'namelist.wps')
                 shutil.copyfile(src, dst)
                 ## copy the geogrid table
-                src = os.path.join(config['wps_dir'],'geogrid','GEOGRID.TBL')
-                assert os.path.exists(src), "Cannot find GEOGRID.TBL ..."
+                src = config['geogrid_tbl']
+                assert os.path.exists(src), "Cannot find GEOGRID.TBL at {} ...".format(src)
                 dst = os.path.join(run_dir_with_date,'GEOGRID.TBL')
                 shutil.copyfile(src, dst)
                 ## link to the geogrid.exe program
-                src = os.path.join(config['wps_dir'],'geogrid.exe')
-                assert os.path.exists(src), "Cannot find geogrid.exe ..."
+                src = config['geogrid_exe']
+                assert os.path.exists(src), "Cannot find geogrid.exe at {} ...".format(src)
                 dst = os.path.join(run_dir_with_date,'geogrid.exe')
                 if not os.path.exists(dst):
                     os.symlink(src, dst)
@@ -389,12 +401,14 @@ for ind_job in range(number_of_jobs):
                 ## deal with SSTs first
                 ##
                 ## copy the link_grib script
-                src = os.path.join(config['wps_dir'],"link_grib.csh")
+                src = config["linkgrib_script"]
+                assert os.path.exists(src), "Cannot find link_grib.csh at {} ...".format(src)
                 dst = os.path.join(run_dir_with_date,"link_grib.csh")
                 if os.path.exists(dst): os.remove(dst)
                 os.symlink(src, dst)
                 ## link the ungrib executabble
-                src = os.path.join(config['wps_dir'],"ungrib.exe")
+                src = config['ungrib_exe']
+                assert os.path.exists(src), "Cannot find ungrib.exe at {} ...".format(src)
                 dst = os.path.join(run_dir_with_date,"ungrib.exe")
                 if not os.path.exists(dst):
                     os.symlink(src, dst)
@@ -404,10 +418,12 @@ for ind_job in range(number_of_jobs):
                 nDaysWps = (wpsEndDate - wpsStrDate).days + 1
 
                 ## configure the namelist
+                ## EDIT: the following are the substitutions used for the WPS namelist
                 WPSnml['share']['start_date'] = [job_start.strftime('%Y-%m-%d_00:00:00')] * nDom
                 WPSnml['share']['end_date']   = [(job_end.date() + datetime.timedelta(days=1)).strftime(  '%Y-%m-%d_%H:%M:%S')] * nDom
                 WPSnml['share']['interval_seconds'] = 6*60*60 ## 24*60*60
                 WPSnml['ungrib']['prefix']    = 'SST'
+                ## end edit section #####################################################
                 ## write out the namelist
                 if os.path.exists('namelist.wps'): os.remove('namelist.wps')
                 ##
@@ -455,7 +471,8 @@ for ind_job in range(number_of_jobs):
                 if len(gribmatches) == 0:
                     raise RuntimeError("Gribfiles not linked successfully...")
                 ## link to the SST Vtable
-                src = os.path.join(config['wps_dir'],'ungrib','Variable_Tables','Vtable.SST')
+                src = config["sst_vtable"]
+                assert os.path.exists(src), "SST Vtable expected at {}".format(src)
                 dst = 'Vtable'
                 if os.path.exists(dst): os.remove(dst)
                 os.symlink(src,dst)
@@ -534,10 +551,12 @@ for ind_job in range(number_of_jobs):
                 if os.path.exists('namelist.wps'):
                     os.remove('namelist.wps')
                 ##
+                ## EDIT: the following are the substitutions used for the WPS namelist
                 WPSnml['share']['start_date'] = [job_start.strftime('%Y-%m-%d_%H:%M:%S')] * nDom
                 WPSnml['share']['end_date']   = [job_end.strftime(  '%Y-%m-%d_%H:%M:%S')] * nDom
                 WPSnml['ungrib']['prefix'] = 'ERA'
                 WPSnml['share']['interval_seconds'] = 6*60*60
+                ## end edit section #####################################################
                 ## write out the namelist
                 if os.path.exists('namelist.wps'): os.remove('namelist.wps')
                 ##
@@ -566,8 +585,8 @@ for ind_job in range(number_of_jobs):
                 ###################
 
                 ## link to the relevant Vtable
-                src = os.path.join(config['wps_dir'],'ungrib','Variable_Tables','Vtable.ERA-interim.pl')
-                assert os.path.exists(src), "Cannot find vtable 'Vtable.ERA-interim.pl' at {} ...".format(src)
+                src = config["analysis_vtable"]
+                assert os.path.exists(src), "Analysis Vtable expected at {}".format(src)
                 dst = os.path.join(run_dir_with_date,'Vtable')
                 if os.path.exists(dst): os.remove(dst)
                 os.symlink(src, dst)
@@ -600,14 +619,14 @@ for ind_job in range(number_of_jobs):
                     os.mkdir(metgriddir)
                 ##
                 ## link to the relevant METGRID.TBL
-                src = os.path.join(config['wps_dir'],'metgrid','METGRID.TBL')
-                assert os.path.exists(src), "Cannot find 'METGRID.TBL' ..."
+                src = config['metgrid_tbl']
+                assert os.path.exists(src), "Cannot find METGRID.TBL at {} ...".format(src)
                 dst = os.path.join(metgriddir,'METGRID.TBL')
                 if not os.path.exists(dst):
                     os.symlink(src, dst)
                 ## link to metgrid.exe
-                src = os.path.join(config['wps_dir'],'metgrid.exe')
-                assert os.path.exists(src), "Cannot find 'metgrid.exe' ..."
+                src = config['metgrid_exe']
+                assert os.path.exists(src), "Cannot find metgrid.exe at {} ...".format(src)
                 dst = os.path.join(run_dir_with_date,'metgrid.exe')
                 if not os.path.exists(dst):
                     os.symlink(src, dst)
@@ -658,6 +677,7 @@ for ind_job in range(number_of_jobs):
 
     ## configure the WRF namelist
     print '\t\tconfigure the WRF namelist'
+    ########## EDIT: the following are the substitutions used for the WRF namelist
     WRFnml['time_control']['start_year']   = [job_start.year]   * nDom
     WRFnml['time_control']['start_month']  = [job_start.month]  * nDom
     WRFnml['time_control']['start_day']    = [job_start.day]    * nDom
@@ -671,6 +691,7 @@ for ind_job in range(number_of_jobs):
     WRFnml['time_control']['end_hour']     = [job_end.hour]     * nDom
     WRFnml['time_control']['end_minute']   = [job_end.minute]   * nDom
     WRFnml['time_control']['end_second']   = [job_end.second]   * nDom
+    ########## end edit section #####################################################
     ##
     WRFnml['time_control']['restart']      = config['restart']
 
@@ -680,28 +701,22 @@ for ind_job in range(number_of_jobs):
     WRFnml.write(nmlfile)
     ## 
     # Get real.exe and WRF.exe
-    src = os.path.join(config['wrf_dir'],'main','real.exe')
-    assert os.path.exists(src), "Cannot find 'real.exe' ..."
+    src = config['real_exe']
+    assert os.path.exists(src), "Cannot find real.exe at {} ...".format(src)
     dst = os.path.join(run_dir_with_date,'real.exe')
-    if not os.path.exists(dst):
-        os.symlink(src, dst)
+    if os.path.exists(dst): os.remove(dst)
+    os.symlink(src, dst)
     ##
-    src = os.path.join(config['wrf_dir'],'main','wrf.exe')
-    assert os.path.exists(src), "Cannot find 'wrf.exe' ..."
+    src = config['wrf_exe']
+    assert os.path.exists(src), "Cannot find wrf.exe at {} ...".format(src)
     dst = os.path.join(run_dir_with_date,'wrf.exe')
-    if not os.path.exists(dst):
-        os.symlink(src, dst)
+    if os.path.exists(dst): os.remove(dst)
+    os.symlink(src, dst)
 
     # Get tables
-    link_pattern_to_dir(sourceDir = os.path.join(config['wrf_dir'],'run'),
-                        pattern = '(DAT|formatted|CAM|asc|TBL|dat|tbl|txt|tr)',
+    link_pattern_to_dir(sourceDir = config['wrf_run_dir'],
+                        pattern = config['wrf_run_tables_pattern'],
                         destDir = run_dir_with_date)
-    # Get the output instructions
-    src = config['extra_variables_file']
-    assert os.path.exists(src), "Cannot find extra variables file ..."
-    dst = os.path.join(run_dir_with_date, os.path.basename(src))
-    if not os.path.exists(dst):
-        os.symlink(src, dst)
 
     # link to scripts from the namelist directory
     scriptsToGet = config['scripts_to_copy_from_nml_dir'].split(',')
@@ -743,10 +758,12 @@ for ind_job in range(number_of_jobs):
     ## generate the run and cleanup scripts
     print '\t\tGenerate the run and cleanup script'
 
+    ########## EDIT: the following are the substitutions used for the per-run cleanup and run scripts
     substitutions = {'RUN_DIR': run_dir_with_date,
                      'RUNSHORT': config["run_name"][:8],
                      'STARTDATE' : job_start_usable.strftime('%Y%m%d'),
                      'firstTimeToKeep': job_start_usable.strftime('%Y-%m-%d_%H:%M:%S')}
+    ########## end edit section #####################################################
 
     ## write out the run and cleanup script
     for dailyScriptName in dailyScriptNames:

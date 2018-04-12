@@ -18,8 +18,8 @@
 # runAsOneJob=$6 ## e.g. runAsOneJob=true
 # RUN_DIR="/short/w22/jds563/data/WRF/${RUNNAME}"
 
-echo ${STARTDATE}
-echo ${RUN_DIR}
+echo Start date is ${STARTDATE}
+echo Run directory is ${RUN_DIR}
 
 [ ! -e ${RUN_DIR}/${STARTDATE}/ ] && echo "directory ${RUN_DIR}/${STARTDATE} not found - exiting" && exit
 cd ${RUN_DIR}/${STARTDATE}/
@@ -34,17 +34,19 @@ fi
 
 n=1
 
+startdate=${STARTDATE}
+
 while [ $n -lt ${njobs} ]; do
 
   # Get the next date
-  start_date=`echo ${STARTDATE} | cut -b 1-8`
-  start_hour=`echo ${STARTDATE} | cut -b 9-10`
-  STARTDATE=`date -u +%Y%m%d%H -d "$start_date+$start_hour hours+${nhours} hours UTC"`
+  start_date=`echo $startdate | cut -b 1-8`
+  start_hour=`echo $startdate | cut -b 9-10`
+  startdate=`date -u +%Y%m%d%H -d "$start_date+$start_hour hours+${nhours} hours UTC"`
  
-  echo ${STARTDATE}
+  echo $startdate
  
   # Go into the next directory
-  cd ${RUN_DIR}/${STARTDATE}/
+  cd ${RUN_DIR}/$startdate/
 
   # Submit run
   if [ ${runAsOneJob} == "true" ] ; then

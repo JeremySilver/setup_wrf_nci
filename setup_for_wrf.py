@@ -21,30 +21,8 @@ import stat
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-c", "--configFile", help="Path to configuration file", default = 'config.json')
-parser.add_argument("-d", "--defaultConfigFile", help="Path to configuration file", default = 'default_config.json')
 args = parser.parse_args()
 configFile = args.configFile
-defaultConfigFile = args.defaultConfigFile
-
-## read the default config file
-assert os.path.exists(defaultConfigFile), "No default configuration file was found at {}".format(defaultConfigFile)
-
-try:
-    f = open(defaultConfigFile,'rt')
-    input_str = f.read()
-    f.close()
-except Exception,e:
-    print "Problem reading in default configuration file"
-    print str(e)
-    
-## parse the default config file
-try:
-    ## strip out the comments
-    input_str = re.sub(r'#.*\n', '\n', input_str)
-    defaultConfig = json.loads(input_str)
-except Exception,e:
-    print "Problem parsing default configuration file"
-    print str(e)
 
 ## read the config file
 assert os.path.exists(configFile), "No configuration file was found at {}".format(configFile)
@@ -65,12 +43,6 @@ try:
 except Exception,e:
     print "Problem parsing in configuration file"
     print str(e)
-
-## merge the default config and config files
-avail_keys = config.keys()
-for configKey in defaultConfig.keys():
-    if configKey not in avail_keys:
-        config[configKey] = defaultConfig[configKey]
 
 ## add some environment variables to the config that may be needed for substitutions
 envVarsToInclude = config["environment_variables_for_substitutions"].split(',')

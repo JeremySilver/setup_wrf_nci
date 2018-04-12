@@ -4,7 +4,6 @@ Files included:
 * `add_remove_var.txt`: List of variables to add/remove to the standard WRF output stream
 * `cleanup_script_template.sh`: Template of per-run clean-up script
 * `config.json`: JSON file with configuration variables
-* `default_config.json`: JSON file with default values for the config
 * `load_conda_env.sh`: Environment variables required to run `setup_for_wrf.py`
 * `main_script_template.sh`: Template of the main coordination script script
 * `nccopy_compress_output.sh`: Script to compress any uncompressed netCDF3 files to deflated netCDF4
@@ -20,7 +19,7 @@ Procedure to run these scripts:
 4. Run the main python script `python setup_for_wrf.py`
 
 The python script does the following:
-* Reads the `config.json` and `default_config.json` configuration files
+* Reads the `config.json` configuration file
 * Performs substitutions of the config file. For example, if used, the shell environment variable `${HOME}` will be replaced by its value when interpreting the script. The variable `wps_dir` is defined within the config file, and if the token `${wps_dir}` appears within the configuration entries, such tokens will be replaced by the value of this variable.
 * Configure the main coordination script
 * Loop over the WRF jobs, performing the following:

@@ -1,11 +1,11 @@
 {
 	# Project name
-	"run_name" : "BERLIN",
+	"run_name" : "baseWrfRun",
         # Start date-time of the first simulation:
         # format = "%Y-%m-%d %H:%M:%S %Z" or just "%Y-%m-%d %H:%M:%S" if the time-zone is UTC
-	"start_date" : "2008-01-16 00:00:00 UTC",
+	"start_date" : "2008-01-14 00:00:00 UTC",
 	# The end time of the last simulation (same format as above)
-	"end_date" : "2008-02-15 00:00:00 UTC",
+	"end_date" : "2008-01-15 00:00:00 UTC",
         # Is this a restart run? (bool -> true/false, yes/no)
 	# FIXME: this hasn't been fully implemented yet (only working for 'false')
 	"restart" : "false",
@@ -23,7 +23,7 @@
 	"submit_wps_component" : "false",
 
 	# shell environment variables to be used for substitutions in this script
-	"environment_variables_for_substitutions":"HOME,USER,PROJECT,TMPDIR"
+	"environment_variables_for_substitutions":"HOME,USER,PROJECT,TMPDIR",
 
 	# top-level directory for the WRF and WPS outputs
 	"run_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}",
@@ -88,7 +88,7 @@
 	# VTable file for the SST analysis files
 	"analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
 	# directory containing WRF input tables and data-files
-	"wrf_run_dir" : "${wrf_dir}/run"
+	"wrf_run_dir" : "${wrf_dir}/run",
 	# pattern to match to get the WRF input tables and data-files (within the folder ${wrf_run_dir}
 	"wrf_run_tables_pattern" : "(DAT|formatted|CAM|asc|TBL|dat|tbl|txt|tr)"
 }

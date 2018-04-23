@@ -34,6 +34,8 @@ try:
 except Exception,e:
     print "Problem reading in configuration file"
     print str(e)
+    sys.exit()
+
     
 ## parse the config file
 try:
@@ -43,6 +45,7 @@ try:
 except Exception,e:
     print "Problem parsing in configuration file"
     print str(e)
+    sys.exit()
 
 ## add some environment variables to the config that may be needed for substitutions
 envVarsToInclude = config["environment_variables_for_substitutions"].split(',')
@@ -55,7 +58,13 @@ avail_keys = config.keys()
 iterationCount = 0
 while iterationCount < 10:
     ## check if any entries in the config dictionary need populating
-    if any([value.find('${') >= 0 for key, value in config.iteritems()]):
+    foundToken = False
+    for key, value in config.iteritems():
+        if isinstance(value, basestring):
+            if (value.find('${') >= 0):
+                foundToken = True
+    ##
+    if foundToken:
         for avail_key in avail_keys:
             key = '${%s}' % avail_key
             value = config[avail_key]
@@ -66,6 +75,7 @@ while iterationCount < 10:
     else:
         break
     ##
+    print config["namelist_wps"]
     iterationCount += 1
 
 assert iterationCount < 10, "Config key substitution exceeded iteration limit..."
@@ -224,6 +234,10 @@ nDom = WPSnml['share']['max_dom']
 ## get the total run length
 run_length_total_hours = config["num_hours_per_run"] + config["num_hours_spin_up"]
 
+## check that the output directory exists - if not, create it
+if not os.path.exists(config["run_dir"]):
+    os.mkdir(config["run_dir"])
+
 print '\t\tGenerate the main coordination script'
 
 ## write out the main coordination script
@@ -265,6 +279,7 @@ for ind_job in range(number_of_jobs):
     run_dir_with_date = os.path.join(config["run_dir"],yyyymmddhh_start)
     if not os.path.exists(run_dir_with_date):
         os.mkdir(run_dir_with_date)
+    ##
     os.chdir(run_dir_with_date)
     ## check that the WRF initialisation files exist
     print "\tCheck that the WRF initialisation files exist"
@@ -301,8 +316,13 @@ for ind_job in range(number_of_jobs):
                 ## copy the geogrid table
                 src = config['geogrid_tbl']
                 assert os.path.exists(src), "Cannot find GEOGRID.TBL at {} ...".format(src)
-                dst = os.path.join(run_dir_with_date,'GEOGRID.TBL')
-                shutil.copyfile(src, dst)
+                geogridFolder = os.path.join(run_dir_with_date,'geogrid')
+                if not os.path.exists(geogridFolder):
+                    os.mkdir(geogridFolder)
+                ##
+                dst = os.path.join(run_dir_with_date,'geogrid','GEOGRID.TBL')
+                if os.path.exists(dst): os.remove(dst)
+                os.symlink(src, dst)
                 ## link to the geogrid.exe program
                 src = config['geogrid_exe']
                 assert os.path.exists(src), "Cannot find geogrid.exe at {} ...".format(src)

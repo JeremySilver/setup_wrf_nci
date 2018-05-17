@@ -10,14 +10,6 @@
 # Submit WRF for a group of consecutive days. Wait for each job to
 # finish before starting the next one.
 
-# STARTDATE=$1   ## e.g. STARTDATE='2010022000'
-# njobs=$2       ## e.g. njobs=20
-# nhours=$3      ## e.g. nhours=12
-# RUNNAME=$4     ## e.g. RUNNAME='SYDNEY'
-# NUDGING=$5     ## e.g. NUDGING=false
-# runAsOneJob=$6 ## e.g. runAsOneJob=true
-# RUN_DIR="/short/w22/jds563/data/WRF/${RUNNAME}"
-
 echo Start date is ${STARTDATE}
 echo Run directory is ${RUN_DIR}
 

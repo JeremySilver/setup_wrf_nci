@@ -8,15 +8,15 @@
 #PBS -l wd
 
 ## Descriptions: this script finds all NETCDF version 3 files on the
-## user's /short/w22/ folder. These are then converted to netcdf4 and
-## compression is applied to the individual fields. The compression
-## does not lead to a loss of accuracy. This should reduce the file
-## size by about 50%
+## user's /short/${PROJECT}/ folder. These are then converted to
+## netcdf4 and compression is applied to the individual fields. The
+## compression does not lead to a loss of accuracy. This typically
+## reduces the file size by about 50%
 
 ## This script can be run on the cluster at NCI via
-## qsub /home/563/jds563/bin/compress_netcdf.sh
+## qsub /path/to/compress_netcdf.sh $TARGET
 ## or on the command line via
-## /home/563/jds563/bin/compress_netcdf.sh
+## /path/to/compress_netcdf.sh $TARGET
 
 module load netcdf
 

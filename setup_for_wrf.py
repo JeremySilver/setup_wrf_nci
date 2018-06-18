@@ -89,7 +89,7 @@ for requisite_key in requisite_keys:
 truevals = ['true', '1', 't', 'y', 'yes']
 falsevals = ['false', '0', 'f', 'n', 'no']
 boolvals = truevals + falsevals
-bool_keys = ["run_as_one_job", "submit_wrf_now", "submit_wps_component", "only_edit_namelists","restart"]
+bool_keys = ["run_as_one_job", "submit_wrf_now", "submit_wps_component", "only_edit_namelists","restart",'delete_metem_files']
 for bool_key in bool_keys:
     assert config[bool_key].lower() in boolvals,'Key {} not a recognised boolean value'.format(bool_key)
     config[bool_key] = (config[bool_key].lower() in truevals)
@@ -746,6 +746,10 @@ for ind_job in range(number_of_jobs):
         if os.path.exists('metgrid.exe'): os.remove('metgrid.exe')
         if os.path.exists('ungrib.exe'): os.remove('ungrib.exe')
         purge(run_dir_with_date, 'met_em*')
+
+        ## optionally delete the met_em files once they have been used
+        if config['delete_metem_files']:
+            purge(config["metem_dir"], 'met_em*')
 
     ## generate the run and cleanup scripts
     print '\t\tGenerate the run and cleanup script'

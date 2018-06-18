@@ -70,6 +70,9 @@
 	# path to the real.exe program
 	"real_exe" : "${wrf_dir}/main/real.exe",
 
+	# delete met_em files once they have been used
+	"delete_metem_files" : "true",
+
 	# directory containing monthly SST files
 	"sst_monthly_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
 	# directory containing daily SST files

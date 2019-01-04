@@ -26,8 +26,9 @@ The python script does the following:
   * Check if the WRF input files for this run are available (`wrfinput_d0?`). If not, perform the following:
     * Check that the geogrid files are available (copies should be found in the directory given by the config variable `nml_dir`). If not available, configure the WPS namelist and run `geogrid.exe` to produce them.
     * Check if the `met_em` files for this run are available. If not, perform the following:
-      * Run `link_grib.csh`, configure the WPS namelist and run `ungrib.exe` for the high-resolution SST files (RTG)
-      * Do the same as the previous step for the analysis files (ERA Interim)
+      * Run `link_grib.csh`, configure the WPS namelist and run `ungrib.exe` for the high-resolution SST files (RTG) - this is optional
+      * If using the NCEP FNL analysis (available from 2015-07-09), download and subset the grib files
+      * Run `link_grib.csh`, configure the WPS namelist and run `ungrib.exe` for the analysis files (ERA Interim or FNL)
       * Run `metgrid.exe` to produce the `met_em` files, moves these to a directory (`METEM`)
     * Link to the `met_em` files (in the `METEM` directory), configure the WRF namelist, run `real.exe`
   * Configure the daily "run" and "cleanup" scripts
@@ -39,6 +40,9 @@ To run the WRF model, either submit the main coordination script or the daily ru
 
 The following files are configured based on the results of `config.json`: `namelist.wps`, `namelist.wrf`, `cleanup_script_template.sh`, `main_script_template.sh`, `run_script_template.sh`. The tokens to replace are identified with the following format: `${keyword}`. Generally speaking, the values for substitution are defined within the python script (`setup_for_wrf.py`). To change the substitutions, edit the python script in the sections between the lines bounded by `## EDIT:` and `## end edit section`. 
 
+## Analysis inputs
+
+This script will either use the ERA Interim reanalyses available on NCI or download NCEP FNL 0.25 analyses. This is set in `config.json'. If using the FNL analyses, you need to create an account on the [UCAR CISL](https://rda.ucar.edu) portal, and enter the credentials in `config.json' - this is not terribly secure, so make up a **fresh password** for this site. If switching between the FNL and ERA Interim reanalyses, you will need to change the Vtable file used (set in `config.json'), and also the number of vertical levels (set in `namelist.wrf' file). Also the merger of the RTG SSTs is only done for the ERA Interim analysis, and this step is optional (set in `config.json').
 
 ## Notes on the structure of the output
 

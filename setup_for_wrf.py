@@ -16,6 +16,8 @@ import time
 import resource
 import copy
 import stat
+import netCDF4
+from downloadFNLanalyses import downloadFNL
 
 ## get command line arguments
 parser = argparse.ArgumentParser()
@@ -89,10 +91,12 @@ for requisite_key in requisite_keys:
 truevals = ['true', '1', 't', 'y', 'yes']
 falsevals = ['false', '0', 'f', 'n', 'no']
 boolvals = truevals + falsevals
-bool_keys = ["run_as_one_job", "submit_wrf_now", "submit_wps_component", "only_edit_namelists","restart",'delete_metem_files']
+bool_keys = ["run_as_one_job", "submit_wrf_now", "submit_wps_component", "only_edit_namelists","restart",'delete_metem_files',"use_high_res_sst_data", 'regional_subset_of_grib_data']
 for bool_key in bool_keys:
     assert config[bool_key].lower() in boolvals,'Key {} not a recognised boolean value'.format(bool_key)
     config[bool_key] = (config[bool_key].lower() in truevals)
+
+assert config['analysis_source'] in ['ERAI', 'FNL'], 'Key analysis_source must be one of ERAI or FNL'
 
 # execfile("/opt/Modules/default/init/python")
 
@@ -409,136 +413,183 @@ for ind_job in range(number_of_jobs):
                 wpsEndDate = (job_end   + datetime.timedelta(days = 1)).date()
                 nDaysWps = (wpsEndDate - wpsStrDate).days + 1
 
-                ## configure the namelist
-                ## EDIT: the following are the substitutions used for the WPS namelist
-                WPSnml['share']['start_date'] = [job_start.strftime('%Y-%m-%d_00:00:00')] * nDom
-                WPSnml['share']['end_date']   = [(job_end.date() + datetime.timedelta(days=1)).strftime(  '%Y-%m-%d_%H:%M:%S')] * nDom
-                WPSnml['share']['interval_seconds'] = 6*60*60 ## 24*60*60
-                WPSnml['ungrib']['prefix']    = 'SST'
-                ## end edit section #####################################################
-                ## write out the namelist
-                if os.path.exists('namelist.wps'): os.remove('namelist.wps')
-                ##
-                WPSnml.write('namelist.wps')
-                    
-                sstDir = 'sst_tmp'
-                if not os.path.exists(sstDir):
-                    os.mkdir(sstDir)
-                ##
-                for iDayWps in range(nDaysWps):
-                    wpsDate = wpsStrDate + datetime.timedelta(days = iDayWps)
-                    ## check for the monthly file
-                    monthlyFile = wpsDate.strftime(config["sst_monthly_pattern"])
-                    monthlyFileSrc = os.path.join(config["sst_monthly_dir"], monthlyFile)
-                    monthlyFileDst = os.path.join(sstDir, monthlyFile)
-                    if os.path.exists(monthlyFileSrc) and (not os.path.exists(monthlyFileDst)):
-                        if not os.path.exists(monthlyFileDst):
-                            os.symlink(monthlyFileSrc, monthlyFileDst)
-                    ## check for the daily file
-                    dailyFile = wpsDate.strftime(config["sst_daily_pattern"])
-                    dailyFileSrc = os.path.join(config["sst_daily_dir"], dailyFile)
-                    dailyFileDst = os.path.join(sstDir, dailyFile)
-                    if os.path.exists(dailyFileSrc) and (not os.path.exists(dailyFileDst)):
-                        if not os.path.exists(dailyFileDst):
-                            os.symlink(dailyFileSrc, dailyFileDst)
-                ##
-                wpsStrDateStr = wpsStrDate.strftime('%Y-%m-%d_%H:%M:%S')
-                wpsEndDateEnd = wpsEndDate.strftime('%Y-%m-%d_%H:%M:%S')
-                ##
-                purge(run_dir_with_date, 'GRIBFILE*')
-                print "\t\tRun link_grib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
-                p = subprocess.Popen(['./link_grib.csh',os.path.join(sstDir,'*')], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = p.communicate()
-                ##
-                f = open('link_grib_sst.log.stdout', 'w')
-                f.writelines(stdout)
-                f.close()
-                ##
-                f = open('link_grib_sst.log.stderr', 'w')
-                f.writelines(stderr)
-                f.close()
-                ## check that it ran
-                ## time.sleep(0.2)
-                gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) > 0 ]
-                if len(gribmatches) == 0:
-                    raise RuntimeError("Gribfiles not linked successfully...")
-                ## link to the SST Vtable
-                src = config["sst_vtable"]
-                assert os.path.exists(src), "SST Vtable expected at {}".format(src)
-                dst = 'Vtable'
-                if os.path.exists(dst): os.remove(dst)
-                os.symlink(src,dst)
-                purge(run_dir_with_date, 'SST:*')
-                purge(run_dir_with_date, 'PFILE:*')
-                ## run ungrib on the SST files
-                ## logfile = 'ungrib_sst.log'
-                ## output_f = open(logfile, 'w')
-                print "\t\tRun ungrib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
-                p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                stdout, stderr = p.communicate()
-                # output_f.flush()
-                ## output_f.close()
-                ## time.sleep(0.5)
-                ##
-                f = open('ungrib_sst.log.stdout', 'w')
-                f.writelines(stdout)
-                f.close()
-                ##
-                f = open('ungrib_sst.log.stderr', 'w')
-                f.writelines(stderr)
-                f.close()
+                ## should we use ERA-Interim analyses?
+                if config['analysis_source'] == 'ERAI':
 
-                ## check that it ran
-                ## matches = grep_file('Successful completion of ungrib', logfile)
-                matches = grep_lines('Successful completion of ungrib', stdout)
-                if len(matches) == 0:
-                    raise RuntimeError("Success message not found in ungrib logfile...")
-                    
-                src = 'namelist.wps'
-                dst = 'namelist.wps.sst'
-                os.rename(src, dst)
+                    if config['use_high_res_sst_data']:
+                        ## configure the namelist
+                        ## EDIT: the following are the substitutions used for the WPS namelist
+                        WPSnml['share']['start_date'] = [job_start.strftime('%Y-%m-%d_00:00:00')] * nDom
+                        WPSnml['share']['end_date']   = [(job_end.date() + datetime.timedelta(days=1)).strftime(  '%Y-%m-%d_%H:%M:%S')] * nDom
+                        WPSnml['share']['interval_seconds'] = 6*60*60 ## 24*60*60
+                        WPSnml['ungrib']['prefix']    = 'SST'
+                        ## end edit section #####################################################
+                        ## write out the namelist
+                        if os.path.exists('namelist.wps'): os.remove('namelist.wps')
+                        ##
+                        WPSnml.write('namelist.wps')
 
-                analysisDir = 'analysis_tmp'
-                if not os.path.exists(analysisDir):
-                    os.mkdir(analysisDir)
-                
-                ## find the files matching the analysis pattern
-                patternTypes = ["analysis_pattern_surface", "analysis_pattern_upper"]
-                for patternType in patternTypes:
-                    pattern = config[patternType]
-                    files = set([])
-                    for iDayWps in range(nDaysWps):
-                        wpsDate = wpsStrDate + datetime.timedelta(days = iDayWps)
-                        patternWithDates = wpsDate.strftime(pattern)
-                        files = files.union(set(glob.glob(patternWithDates)))
-                    ##
-                    files = list(files)
-                    files.sort()
-                    if patternType == "analysis_pattern_upper":
-                        ## for the upper-level files, be selective and use only those that contain the relevant range of dates
-                        for ifile, filename in enumerate(files):
-                            basepieces = os.path.basename(filename).split('_')
-                            fileStartDateStr = os.path.basename(filename).split('_')[-2]
-                            fileEndDateStr = os.path.basename(filename).split('_')[-1]
-                            fileStartDate = datetime.datetime.strptime(fileStartDateStr,'%Y%m%d').date()
-                            fileEndDate = datetime.datetime.strptime(fileEndDateStr,'%Y%m%d').date()
-                            ##
-                            if fileStartDate <= wpsStrDate and wpsStrDate <= fileEndDate:
-                                ifileStart = ifile
-                            ##
-                            if fileStartDate <= wpsEndDate and wpsEndDate <= fileEndDate:
-                                ifileEnd   = ifile
+                        sstDir = 'sst_tmp'
+                        if not os.path.exists(sstDir):
+                            os.mkdir(sstDir)
+                        ##
+                        for iDayWps in range(nDaysWps):
+                            wpsDate = wpsStrDate + datetime.timedelta(days = iDayWps)
+                            ## check for the monthly file
+                            monthlyFile = wpsDate.strftime(config["sst_monthly_pattern"])
+                            monthlyFileSrc = os.path.join(config["sst_monthly_dir"], monthlyFile)
+                            monthlyFileDst = os.path.join(sstDir, monthlyFile)
+                            if os.path.exists(monthlyFileSrc) and (not os.path.exists(monthlyFileDst)):
+                                if not os.path.exists(monthlyFileDst):
+                                    os.symlink(monthlyFileSrc, monthlyFileDst)
+                            ## check for the daily file
+                            dailyFile = wpsDate.strftime(config["sst_daily_pattern"])
+                            dailyFileSrc = os.path.join(config["sst_daily_dir"], dailyFile)
+                            dailyFileDst = os.path.join(sstDir, dailyFile)
+                            if os.path.exists(dailyFileSrc) and (not os.path.exists(dailyFileDst)):
+                                if not os.path.exists(dailyFileDst):
+                                    os.symlink(dailyFileSrc, dailyFileDst)
+                        ##
+                        wpsStrDateStr = wpsStrDate.strftime('%Y-%m-%d_%H:%M:%S')
+                        wpsEndDateEnd = wpsEndDate.strftime('%Y-%m-%d_%H:%M:%S')
+                        ##
+                        purge(run_dir_with_date, 'GRIBFILE*')
+                        print "\t\tRun link_grib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                        p = subprocess.Popen(['./link_grib.csh',os.path.join(sstDir,'*')], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stdout, stderr = p.communicate()
+                        ##
+                        f = open('link_grib_sst.log.stdout', 'w')
+                        f.writelines(stdout)
+                        f.close()
+                        ##
+                        f = open('link_grib_sst.log.stderr', 'w')
+                        f.writelines(stderr)
+                        f.close()
+                        ## check that it ran
+                        ## time.sleep(0.2)
+                        gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) > 0 ]
+                        if len(gribmatches) == 0:
+                            raise RuntimeError("Gribfiles not linked successfully...")
+                        ## link to the SST Vtable
+                        src = config["sst_vtable"]
+                        assert os.path.exists(src), "SST Vtable expected at {}".format(src)
+                        dst = 'Vtable'
+                        if os.path.exists(dst): os.remove(dst)
+                        os.symlink(src,dst)
+                        purge(run_dir_with_date, 'SST:*')
+                        purge(run_dir_with_date, 'PFILE:*')
+                        ## run ungrib on the SST files
+                        ## logfile = 'ungrib_sst.log'
+                        ## output_f = open(logfile, 'w')
+                        print "\t\tRun ungrib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                        p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stdout, stderr = p.communicate()
+                        # output_f.flush()
+                        ## output_f.close()
+                        ## time.sleep(0.5)
+                        ##
+                        f = open('ungrib_sst.log.stdout', 'w')
+                        f.writelines(stdout)
+                        f.close()
+                        ##
+                        f = open('ungrib_sst.log.stderr', 'w')
+                        f.writelines(stderr)
+                        f.close()
+
+                        ## check that it ran
+                        ## matches = grep_file('Successful completion of ungrib', logfile)
+                        matches = grep_lines('Successful completion of ungrib', stdout)
+                        if len(matches) == 0:
+                            raise RuntimeError("Success message not found in ungrib logfile...")
+
+                        src = 'namelist.wps'
+                        dst = 'namelist.wps.sst'
+                        os.rename(src, dst)
+
+                    analysisDir = 'analysis_tmp'
+                    if not os.path.exists(analysisDir):
+                        os.mkdir(analysisDir)
+
+                    ## find the files matching the analysis pattern
+                    patternTypes = ["analysis_pattern_surface", "analysis_pattern_upper"]
+                    for patternType in patternTypes:
+                        pattern = config[patternType]
+                        files = set([])
+                        for iDayWps in range(nDaysWps):
+                            wpsDate = wpsStrDate + datetime.timedelta(days = iDayWps)
+                            patternWithDates = wpsDate.strftime(pattern)
+                            files = files.union(set(glob.glob(patternWithDates)))
+                        ##
+                        files = list(files)
+                        files.sort()
+                        if patternType == "analysis_pattern_upper":
+                            ## for the upper-level files, be selective and use only those that contain the relevant range of dates
+                            for ifile, filename in enumerate(files):
+                                basepieces = os.path.basename(filename).split('_')
+                                fileStartDateStr = os.path.basename(filename).split('_')[-2]
+                                fileEndDateStr = os.path.basename(filename).split('_')[-1]
+                                fileStartDate = datetime.datetime.strptime(fileStartDateStr,'%Y%m%d').date()
+                                fileEndDate = datetime.datetime.strptime(fileEndDateStr,'%Y%m%d').date()
+                                ##
+                                if fileStartDate <= wpsStrDate and wpsStrDate <= fileEndDate:
+                                    ifileStart = ifile
+                                ##
+                                if fileStartDate <= wpsEndDate and wpsEndDate <= fileEndDate:
+                                    ifileEnd   = ifile
+                        else:
+                            ## for the surface files use all those that match
+                            ifileStart = 0
+                            ifileEnd = len(files)-1
+                        ##
+                        for ifile in range(ifileStart, ifileEnd+1):
+                            src = files[ifile]
+                            dst = os.path.join(analysisDir,os.path.basename(src))
+                            if not os.path.exists(dst):
+                                os.symlink(src, dst)
+
+                        ## prepare to run link_grib.csh
+                        linkGribCmds = ['./link_grib.csh',os.path.join(analysisDir,'*')]
+
+                else:
+                    ## consider the case that we are using the FNL datax
+                    nIntervals = int(round((job_end - job_start).total_seconds()/3600./6.)) + 1
+                    FNLtimes = [job_start + datetime.timedelta(hours=6*hi) for hi in range(nIntervals)]
+                    FNLfiles = [time.strftime('gdas1.fnl0p25.%Y%m%d%H.f00.grib2') for time in FNLtimes]
+                    ## if the FNL data exists, don't bother downloading
+                    allFNLfilesExist = all([os.path.exists(FNLfile) for FNLfile in FNLfiles])
+                    if allFNLfilesExist:
+                        print "\t\tAll FNL files were found - do not repeat the download"
                     else:
-                        ## for the surface files use all those that match
-                        ifileStart = 0
-                        ifileEnd = len(files)-1
-                    ##
-                    for ifile in range(ifileStart, ifileEnd+1):
-                        src = files[ifile]
-                        dst = os.path.join(analysisDir,os.path.basename(src))
-                        if not os.path.exists(dst):
-                            os.symlink(src, dst)
-                
+                        ## otherwise get it all
+                        FNLfiles = downloadFNL(email = config['rda_ucar_edu_email'],
+                                               pswd = config['rda_ucar_edu_pword'],
+                                               targetDir = run_dir_with_date,
+                                               times = FNLtimes)
+                    linkGribCmds = ['./link_grib.csh' ] + FNLfiles
+                    ## optionally take a regional subset
+                    if config['regional_subset_of_grib_data']:
+                        geoFile = 'geo_em.d01.nc'
+                        ## find the geographical region, and add a few degrees on either side
+                        geoStrs = {}
+                        nc = netCDF4.Dataset(geoFile)
+                        for varname in ['XLAT_M', 'XLONG_M']:
+                            coords = nc.variables[varname][:]
+                            coords = [coords.min(),coords.max()]
+                            coords = [math.floor((coords[0])/5.0 - 1)*5, math.ceil((coords[1])/5.0 + 1)*5 ]
+                            coordStr = '{}:{}'.format(coords[0],coords[1])
+                            geoStrs[varname] = coordStr
+                        nc.close()
+                        ## use wgrib2 that 
+                        for FNLfile in FNLfiles:
+                            tmpfile = os.path.join('/tmp',os.path.basename(FNLfile))
+                            print "\t\tSubset the grib file",os.path.basename(FNLfile)
+                            stdout, stderr = subprocess.Popen(['wgrib2',FNLfile,'-small_grib',geoStrs['XLONG_M'], geoStrs['XLAT_M'],tmpfile], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                            if len(stderr) > 0:
+                                raise RuntimeError("Errors found when running wgrib2...")
+                            ## use the subset instead - delete the original and put the subset in its place
+                            os.remove(FNLfile)
+                            shutil.copyfile(tmpfile,FNLfile)
+                    
                 ## write out the namelist
                 if os.path.exists('namelist.wps'):
                     os.remove('namelist.wps')
@@ -556,7 +607,7 @@ for ind_job in range(number_of_jobs):
                 ##
                 purge(run_dir_with_date, 'GRIBFILE*')
                 print "\t\tRun link_grib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
-                p = subprocess.Popen(['./link_grib.csh',os.path.join(analysisDir,'*')], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                p = subprocess.Popen(linkGribCmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
                 ##
                 f = open('link_grib_era.log.stdout', 'w')
@@ -601,6 +652,11 @@ for ind_job in range(number_of_jobs):
                 matches = grep_lines('Successful completion of ungrib', stdout)
                 if len(matches) == 0:
                     raise RuntimeError("Success message not found in ungrib logfile...")
+
+                ## if we are using the FNL analyses, delete the downloaded FNL files
+                if config['analysis_source'] == 'FNL':
+                    for FNLfile in FNLfiles:
+                        os.remove(FNLfile)
                 
                 #############
                 # Run metgrid
@@ -609,6 +665,9 @@ for ind_job in range(number_of_jobs):
                 metgriddir = os.path.join(run_dir_with_date,'metgrid')
                 if not os.path.exists(metgriddir):
                     os.mkdir(metgriddir)
+                WPSnml['metgrid']['fg_name']    = ['ERA']
+                if config['use_high_res_sst_data']:
+                    WPSnml['metgrid']['fg_name'].append('SST')
                 ##
                 ## link to the relevant METGRID.TBL
                 src = config['metgrid_tbl']
@@ -641,7 +700,8 @@ for ind_job in range(number_of_jobs):
                     raise RuntimeError("Success message not found in metgrid logfile...")
                 
                 purge(run_dir_with_date, 'ERA:*')
-                purge(run_dir_with_date, 'SST:*')
+                if config['use_high_res_sst_data']:
+                    purge(run_dir_with_date, 'SST:*')
                 purge(run_dir_with_date, 'FILE:*')
                 purge(run_dir_with_date, 'PFILE:*')
                 purge(run_dir_with_date, 'GRIB:*')

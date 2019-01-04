@@ -1,97 +1,110 @@
 {
-	# Project name
-	"run_name" : "baseWrfRun",
-        # Start date-time of the first simulation:
-        # format = "%Y-%m-%d %H:%M:%S %Z" or just "%Y-%m-%d %H:%M:%S" if the time-zone is UTC
-	"start_date" : "2008-01-14 00:00:00 UTC",
-	# The end time of the last simulation (same format as above)
-	"end_date" : "2008-01-15 00:00:00 UTC",
-        # Is this a restart run? (bool -> true/false, yes/no)
-	# FIXME: this hasn't been fully implemented yet (only working for 'false')
-	"restart" : "false",
-	# Number of hours of simulation of each run (excluding spin-up)
-	"num_hours_per_run":24,
-	# Number of hours of spin-up simulation of each run
-	"num_hours_spin_up":12,
-	# submit run as one job (if false, each run needs to get through the queue separately)
-	"run_as_one_job" : "true",
-	# Submit the WRF runs at the end of the script? (bool -> true/false, yes/no)
-	# FIXME: this hasn't been fully implemented yet (only working for 'false')
-	"submit_wrf_now" : "false",
-	# Submit the WPS component to the queue? (bool -> true/false, yes/no)
-	# FIXME: this hasn't been fully implemented yet (only working for 'false')
-	"submit_wps_component" : "false",
+    # Project name
+    "run_name" : "baseWrfRun",
+    # Start date-time of the first simulation:
+    # format = "%Y-%m-%d %H:%M:%S %Z" or just "%Y-%m-%d %H:%M:%S" if the time-zone is UTC
+    "start_date" : "2016-01-14 00:00:00 UTC",
+    # The end time of the last simulation (same format as above)
+    "end_date" : "2016-01-15 00:00:00 UTC",
+    # Is this a restart run? (bool -> true/false, yes/no)
+    # FIXME: this hasn't been fully implemented yet (only working for 'false')
+    "restart" : "false",
+    # Number of hours of simulation of each run (excluding spin-up)
+    "num_hours_per_run":24,
+    # Number of hours of spin-up simulation of each run
+    "num_hours_spin_up":12,
+    # submit run as one job (if false, each run needs to get through the queue separately)
+    "run_as_one_job" : "true",
+    # Submit the WRF runs at the end of the script? (bool -> true/false, yes/no)
+    # FIXME: this hasn't been fully implemented yet (only working for 'false')
+    "submit_wrf_now" : "false",
+    # Submit the WPS component to the queue? (bool -> true/false, yes/no)
+    # FIXME: this hasn't been fully implemented yet (only working for 'false')
+    "submit_wps_component" : "false",
 
-	# shell environment variables to be used for substitutions in this script
-	"environment_variables_for_substitutions":"HOME,USER,PROJECT,TMPDIR",
+    # shell environment variables to be used for substitutions in this script
+    "environment_variables_for_substitutions":"HOME,USER,PROJECT,TMPDIR",
 
-	# top-level directory for the WRF and WPS outputs
-	"run_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}",
+    # top-level directory for the WRF and WPS outputs
+    "run_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}",
 
-	# filename of the template run-script
-	"run_script_template" : "run_script_template.sh",
-	# filename of the template script for clean-up duties
-	"cleanup_script_template" : "cleanup_script_template.sh",
-	# filename of the template script to coordinate the process
-	"main_script_template" : "main_script_template.sh",
-	
-	# should the only task performed by the python script be to edit the WRF namelists and the shell scripts (the daily run-script, the daily clean-up script and the main coordination script)
-	"only_edit_namelists" : "false",
-	
-	# the top-level WPS directory
-	"wps_dir" : "${HOME}/programs/WPS",
-	# the top-level directory containing the WRF executables and data-tables
-	"wrf_dir" : "/short/${PROJECT}/${USER}/code/WRFV_3.9.1.1/WRFV3",
-	# this directory (the directory with template namelists)
-	"nml_dir" : "${HOME}/projects/runWRF/${run_name}",
-	# scripts to copy from directory ${nml_dir} to each day
-	"scripts_to_copy_from_nml_dir":"add_remove_var.txt,nccopy_compress_output.sh",
-	# output location for the met_em files
-	"metem_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}/METEM",
+    # filename of the template run-script
+    "run_script_template" : "run_script_template.sh",
+    # filename of the template script for clean-up duties
+    "cleanup_script_template" : "cleanup_script_template.sh",
+    # filename of the template script to coordinate the process
+    "main_script_template" : "main_script_template.sh",
+    
+    # should the only task performed by the python script be to edit the WRF namelists and the shell scripts (the daily run-script, the daily clean-up script and the main coordination script)
+    "only_edit_namelists" : "false",
 
-	# template namelist for WPS
-	"namelist_wps" : "${nml_dir}/namelist.wps",
-	# template namelist for WRF
-	"namelist_wrf" : "${nml_dir}/namelist.wrf",
-	# path to the GEOGRID.TBL file
-	"geogrid_tbl" : "${wps_dir}/geogrid/GEOGRID.TBL",
-	# path to the geogrid.exe program
-	"geogrid_exe" : "${wps_dir}/geogrid.exe",
-	# path to the ungrib.exe program
-	"ungrib_exe" : "${wps_dir}/ungrib.exe",
-	# path to the METGRID.TBL file
-	"metgrid_tbl" : "${wps_dir}/metgrid/METGRID.TBL",
-	# path to the metgrid.exe program
-	"metgrid_exe" : "${wps_dir}/metgrid.exe",
-	# path to the link_grib.csh script
-	"linkgrib_script" : "${wps_dir}/link_grib.csh",
-	# path to the wrf.exe program
-	"wrf_exe" : "${wrf_dir}/main/wrf.exe",
-	# path to the real.exe program
-	"real_exe" : "${wrf_dir}/main/real.exe",
+    # should we use the RTG high resolution SSTs?
+    "use_high_res_sst_data" : "true",
+    
+    # the top-level WPS directory
+    "wps_dir" : "${HOME}/programs/WPS",
+    # the top-level directory containing the WRF executables and data-tables
+    "wrf_dir" : "/short/${PROJECT}/${USER}/code/WRFV_3.9.1.1/WRFV3",
+    # this directory (the directory with template namelists)
+    "nml_dir" : "${HOME}/projects/runWRF/${run_name}",
+    # scripts to copy from directory ${nml_dir} to each day
+    "scripts_to_copy_from_nml_dir":"add_remove_var.txt,nccopy_compress_output.sh",
+    # output location for the met_em files
+    "metem_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}/METEM",
 
-	# delete met_em files once they have been used
-	"delete_metem_files" : "true",
+    # template namelist for WPS
+    "namelist_wps" : "${nml_dir}/namelist.wps",
+    # template namelist for WRF
+    "namelist_wrf" : "${nml_dir}/namelist.wrf",
+    # path to the GEOGRID.TBL file
+    "geogrid_tbl" : "${wps_dir}/geogrid/GEOGRID.TBL",
+    # path to the geogrid.exe program
+    "geogrid_exe" : "${wps_dir}/geogrid.exe",
+    # path to the ungrib.exe program
+    "ungrib_exe" : "${wps_dir}/ungrib.exe",
+    # path to the METGRID.TBL file
+    "metgrid_tbl" : "${wps_dir}/metgrid/METGRID.TBL",
+    # path to the metgrid.exe program
+    "metgrid_exe" : "${wps_dir}/metgrid.exe",
+    # path to the link_grib.csh script
+    "linkgrib_script" : "${wps_dir}/link_grib.csh",
+    # path to the wrf.exe program
+    "wrf_exe" : "${wrf_dir}/main/wrf.exe",
+    # path to the real.exe program
+    "real_exe" : "${wrf_dir}/main/real.exe",
 
-	# directory containing monthly SST files
-	"sst_monthly_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
-	# directory containing daily SST files
-	"sst_daily_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
-	# pattern for matching monthly SST files (date-time substitutions recognised)
-	"sst_monthly_pattern" : "rtg_sst_grb_hr_0.083.%Y%m",
-	# pattern for matching daily SST files (date-time substitutions recognised)
-	"sst_daily_pattern" : "rtg_sst_grb_hr_0.083.%Y%m%d",
-	# VTable file for the SST GRIB files
-	"sst_vtable": "${wps_dir}/ungrib/Variable_Tables/Vtable.SST",
-	# pattern for matching the full-atmosphere analysis files (date-time substitutions recognised as well as shell wildcards)
-	"analysis_pattern_upper" : "/g/data1/ub4/erai/grib/oper_an_pl/fullres/%Y/ei_oper_an_pl_075x075_90N0E90S35925E_%Y%m*",
-	# pattern for matching the surface-level analysis files (date-time substitutions recognised as well as shell wildcards)
-	"analysis_pattern_surface" : "/g/data1/ub4/erai/grib/oper_an_sfc/fullres/ei_oper_an_sfc_075x075_90N0E90S35925E_%Y%m*",
-	
-	# VTable file for the SST analysis files
-	"analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
-	# directory containing WRF input tables and data-files
-	"wrf_run_dir" : "${wrf_dir}/run",
-	# pattern to match to get the WRF input tables and data-files (within the folder ${wrf_run_dir}
-	"wrf_run_tables_pattern" : "(DAT|formatted|CAM|asc|TBL|dat|tbl|txt|tr)"
+    # delete met_em files once they have been used
+    "delete_metem_files" : "true",
+
+    # analysis source - can be "ERAI" or "FNL"
+    "analysis_source" : "FNL",
+
+    # if analysis_source is "FNL", you will need a login for CISL/rda.ucar.edu
+    rda_ucar_edu_email : "me@example.com",
+    rda_ucar_edu_pword : "password",
+    # if analysis_source is "FNL", it's a good idea to take a subset of the grib2 files
+    "regional_subset_of_grib_data" : "true",
+
+    # directory containing monthly SST files
+    "sst_monthly_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
+    # directory containing daily SST files
+    "sst_daily_dir" : "/g/data/ua8/NCEP_Polar/sst/rtg_high_res",
+    # pattern for matching monthly SST files (date-time substitutions recognised)
+    "sst_monthly_pattern" : "rtg_sst_grb_hr_0.083.%Y%m",
+    # pattern for matching daily SST files (date-time substitutions recognised)
+    "sst_daily_pattern" : "rtg_sst_grb_hr_0.083.%Y%m%d",
+    # VTable file for the SST GRIB files
+    "sst_vtable": "${wps_dir}/ungrib/Variable_Tables/Vtable.SST",
+    # pattern for matching the full-atmosphere analysis files (date-time substitutions recognised as well as shell wildcards)
+    "analysis_pattern_upper" : "/g/data1/ub4/erai/grib/oper_an_pl/fullres/%Y/ei_oper_an_pl_075x075_90N0E90S35925E_%Y%m*",
+    # pattern for matching the surface-level analysis files (date-time substitutions recognised as well as shell wildcards)
+    "analysis_pattern_surface" : "/g/data1/ub4/erai/grib/oper_an_sfc/fullres/ei_oper_an_sfc_075x075_90N0E90S35925E_%Y%m*",
+    
+    # VTable file for the SST analysis files
+    # "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
+    "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.GFS",
+    # directory containing WRF input tables and data-files
+    "wrf_run_dir" : "${wrf_dir}/run",
+    # pattern to match to get the WRF input tables and data-files (within the folder ${wrf_run_dir}
+    "wrf_run_tables_pattern" : "(DAT|formatted|CAM|asc|TBL|dat|tbl|txt|tr)"
 }

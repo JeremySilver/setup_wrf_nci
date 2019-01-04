@@ -4,7 +4,7 @@
  start_date = 'SDATE','SDATE','SDATE','SDATE',
  end_date   = 'EDATE','EDATE','EDATE','EDATE',
  interval_seconds = 21600,
- io_form_geogrid = 4,
+ io_form_geogrid = 2,
  debug_level = 0,
 /
 

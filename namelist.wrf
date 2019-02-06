@@ -17,8 +17,8 @@
  end_second                          = 00,   00,   00,     00, 
  interval_seconds                    = 21600,
  input_from_file                     = .true.,.true.,.true.,.true.
- history_interval                    = 05,  05,  05,  05,
- frames_per_outfile                  = 12,  12,  12,  12,
+ history_interval                    = 60,  60,  60,  60,
+ frames_per_outfile                  =  1,   1,   1,   1,
  restart                             = .false.,
  iofields_filename                   = 'add_remove_var.txt','add_remove_var.txt','add_remove_var.txt','add_remove_var.txt',
  ignore_iofields_warning             = .true.,

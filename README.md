@@ -1,22 +1,26 @@
 # WRF coordination scripts
 
+**Updated to run on Gadi: these scripts no longer work on Raijin**
+
 Files included:
 * `add_remove_var.txt`: List of variables to add/remove to the standard WRF output stream
 * `cleanup_script_template.sh`: Template of per-run clean-up script
 * `config.json`: JSON file with configuration variables
 * `load_conda_env.sh`: Environment variables required to run `setup_for_wrf.py`
+* `load_wrf_env.sh`: Environment variables required to run WRF executables (same as to compile WRF)
 * `main_script_template.sh`: Template of the main coordination script script
+* `namelist.wps`: Template namelist for WPS
+* `namelist.wrf`: Template namelist for WRF
 * `nccopy_compress_output.sh`: Script to compress any uncompressed netCDF3 files to deflated netCDF4
 * `run_script_template.sh`: Template of the per-run run script
 * `setup_for_wrf.py`: Main script to run to prepare the simulations
-* `namelist.wps`: Template namelist for WPS
-* `namelist.wrf`: Template namelist for WRF
+* `submit_setup.sh`: Script to submit (to the `copyq`) that does the setup
 
 Procedure to run these scripts:
-1. Edit the above scripts, particularly `config.json`, `namelist.wrf`, `namelist.wps`
-2. Load the relevant environment modules: `source load_conda_env.sh`
-3. If extra memory is required in step 4. below, log into one of the `copyq` nodes and run the script interactively (via `qsub -I -q copyq -l wd,walltime=2:00:00,ncpus=1,mem=6GB`, for example) or put it in a script.
-4. Run the main python script `python setup_for_wrf.py`
+1. Edit the above scripts, particularly `config.json`, `namelist.wrf`, `namelist.wps`, `load_wrf_env.sh` (and possibly also `load_conda_env.sh`).
+2. Either submit the setup via `qsub submit_setup.sh` *or* do the following:
+..a. Log into one of the `copyq` nodes in interactive mode (via `qsub -I -q copyq -l wd,walltime=2:00:00,ncpus=1,mem=6GB`, for example).
+..b. Run `./submit_setup.sh` on the command line.
 
 The python script does the following:
 * Reads the `config.json` configuration file
@@ -38,7 +42,13 @@ To run the WRF model, either submit the main coordination script or the daily ru
 
 ## Notes on the input files and scripts
 
-The following files are configured based on the results of `config.json`: `namelist.wps`, `namelist.wrf`, `cleanup_script_template.sh`, `main_script_template.sh`, `run_script_template.sh`. The tokens to replace are identified with the following format: `${keyword}`. Generally speaking, the values for substitution are defined within the python script (`setup_for_wrf.py`). To change the substitutions, edit the python script in the sections between the lines bounded by `## EDIT:` and `## end edit section`. 
+The following files are configured based on the results of `config.json`: `namelist.wps`, `namelist.wrf`, `cleanup_script_template.sh`, `main_script_template.sh`, `run_script_template.sh`. The tokens to replace are identified with the following format: `${keyword}`. Generally speaking, the values for substitution are defined within the python script (`setup_for_wrf.py`). To change the substitutions, edit the python script in the sections between the lines bounded by `## EDIT:` and `## end edit section`.
+
+The `load_wrf_env.sh` script should contain the *same* environment modules that were used to compile WRF. It is assumed that you have compiled with MPI (i.e. 'distributed memory').
+
+## A few caveats
+
+This has been tested on *Gadi* using the [CLEX CMS WRF setup](https://github.com/coecms/WRF). Users of NCI wanting to run WRF are strongly encouraged to use this version, and to consult [the CMS page on WRF](http://climate-cms.wikis.unsw.edu.au/WRF). These scripts assume that WRF was compiled for MPI multiprocessing (i.e. 'distributed memory' parallelism). 
 
 ## Analysis inputs
 
@@ -60,3 +70,6 @@ The scripts have been developed with the following principles:
 * The data footprint should be kept to a minimum.
 * Progress is reported as the script progresses.
 
+## General disclaimer
+
+This software is provided "as is". I maintain it in the little spare time I have. I have limited time to debug things when they break, so please be prepared to solve problems yourself.

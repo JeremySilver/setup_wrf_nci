@@ -1,7 +1,12 @@
 #!/bin/bash
 
 module purge
-module load pbs dot nco/4.6.4 intel-fc/12.1.9.293 intel-cc/12.1.9.293
+module load pbs
+module load dot
+module load nco 
 module use /g/data3/hh5/public/modules
 module load conda/analysis27
 module load wgrib2
+## load the *same* as used in the WRF build.env files
+## that contains the environment modules used in WRF.
+source load_wrf_env.sh

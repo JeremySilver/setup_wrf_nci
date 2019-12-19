@@ -26,7 +26,7 @@
     "environment_variables_for_substitutions":"HOME,USER,PROJECT,TMPDIR",
 
     # top-level directory for the WRF and WPS outputs
-    "run_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}",
+    "run_dir" : "/scratch/${PROJECT}/${USER}/data/WRF/${run_name}",
 
     # filename of the template run-script
     "run_script_template" : "run_script_template.sh",
@@ -44,13 +44,13 @@
     # the top-level WPS directory
     "wps_dir" : "${HOME}/programs/WPS",
     # the top-level directory containing the WRF executables and data-tables
-    "wrf_dir" : "/short/${PROJECT}/${USER}/code/WRFV_3.9.1.1/WRFV3",
+    "wrf_dir" : "/scratch/${PROJECT}/${USER}/code/WRFV_3.9.1.1/WRFV3",
     # this directory (the directory with template namelists)
     "nml_dir" : "${HOME}/projects/runWRF/${run_name}",
     # scripts to copy from directory ${nml_dir} to each day
-    "scripts_to_copy_from_nml_dir":"add_remove_var.txt,nccopy_compress_output.sh",
+    "scripts_to_copy_from_nml_dir":"add_remove_var.txt,nccopy_compress_output.sh,load_wrf_env.sh",
     # output location for the met_em files
-    "metem_dir" : "/short/${PROJECT}/${USER}/data/WRF/${run_name}/METEM",
+    "metem_dir" : "/scratch/${PROJECT}/${USER}/data/WRF/${run_name}/METEM",
 
     # template namelist for WPS
     "namelist_wps" : "${nml_dir}/namelist.wps",
@@ -77,7 +77,7 @@
     "delete_metem_files" : "true",
 
     # analysis source - can be "ERAI" or "FNL"
-    "analysis_source" : "FNL",
+    "analysis_source" : "ERAI",
 
     # if analysis_source is "FNL", you will need a login for CISL/rda.ucar.edu
     rda_ucar_edu_email : "me@example.com",
@@ -96,13 +96,13 @@
     # VTable file for the SST GRIB files
     "sst_vtable": "${wps_dir}/ungrib/Variable_Tables/Vtable.SST",
     # pattern for matching the full-atmosphere analysis files (date-time substitutions recognised as well as shell wildcards)
-    "analysis_pattern_upper" : "/g/data1/ub4/erai/grib/oper_an_pl/fullres/%Y/ei_oper_an_pl_075x075_90N0E90S35925E_%Y%m*",
+    "analysis_pattern_upper" : "/g/data/ub4/erai/grib/oper_an_pl/fullres/%Y/ei_oper_an_pl_075x075_90N0E90S35925E_%Y%m*",
     # pattern for matching the surface-level analysis files (date-time substitutions recognised as well as shell wildcards)
-    "analysis_pattern_surface" : "/g/data1/ub4/erai/grib/oper_an_sfc/fullres/ei_oper_an_sfc_075x075_90N0E90S35925E_%Y%m*",
+    "analysis_pattern_surface" : "/g/data/ub4/erai/grib/oper_an_sfc/fullres/ei_oper_an_sfc_075x075_90N0E90S35925E_%Y%m*",
     
     # VTable file for the SST analysis files
-    # "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
-    "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.GFS",
+    "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.ERA-interim.pl",
+    # "analysis_vtable" : "${wps_dir}/ungrib/Variable_Tables/Vtable.GFS",
     # directory containing WRF input tables and data-files
     "wrf_run_dir" : "${wrf_dir}/run",
     # pattern to match to get the WRF input tables and data-files (within the folder ${wrf_run_dir}

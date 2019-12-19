@@ -2,28 +2,23 @@
 
 #PBS -N ${RUNSHORT}_${STARTDATE}
 #PBS -l walltime=12:00:00
-#PBS -l mem=128GB
-#PBS -l ncpus=28
+#PBS -l mem=192GB
+#PBS -l ncpus=48
 #PBS -j oe
-#PBS -q normalbw
+#PBS -q normal
 #PBS -l wd
 
 module purge
 module load dot
 module load pbs
-module load intel-cc/17.0.1.132
-module load intel-fc/17.0.1.132
-module load netcdf/4.3.3.1
-module load openmpi/1.10.2
-module load nco
-module load hdf5/1.8.10
+source load_wrf_env.sh
 
 
 ulimit -s unlimited
 cd ${RUN_DIR}
 
 echo running with $PBS_NCPUS mpi ranks
-time mpirun -np $PBS_NCPUS -report-bindings ./wrf.exe >& wrf.log
+time mpirun -np $PBS_NCPUS ./wrf.exe >& wrf.log
 
 if [ ! -e rsl.out.0000 ] ; then
     echo "wrf.exe did not complete successfully - exiting"

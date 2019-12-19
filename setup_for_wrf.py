@@ -4,6 +4,7 @@ import pytz
 import io
 import re
 import os
+import errno    
 import argparse
 import math
 import f90nml
@@ -117,8 +118,17 @@ for scriptName in scriptNames:
     except Exception,e:
         print "Problem reading in template {} script".format(scriptName)
         print str(e)
-    
 
+## make directories recursively, and safely
+## this function is a copy of: https://stackoverflow.com/a/600612/356426
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 ## function to parse times
 def process_date_string(datestring):
@@ -240,7 +250,7 @@ run_length_total_hours = config["num_hours_per_run"] + config["num_hours_spin_up
 
 ## check that the output directory exists - if not, create it
 if not os.path.exists(config["run_dir"]):
-    os.mkdir(config["run_dir"])
+    mkdir_p(config["run_dir"])
 
 print '\t\tGenerate the main coordination script'
 
@@ -282,7 +292,7 @@ for ind_job in range(number_of_jobs):
     yyyymmddhh_start = job_start_usable.strftime('%Y%m%d%H')
     run_dir_with_date = os.path.join(config["run_dir"],yyyymmddhh_start)
     if not os.path.exists(run_dir_with_date):
-        os.mkdir(run_dir_with_date)
+        mkdir_p(run_dir_with_date)
     ##
     os.chdir(run_dir_with_date)
     ## check that the WRF initialisation files exist
@@ -322,7 +332,7 @@ for ind_job in range(number_of_jobs):
                 assert os.path.exists(src), "Cannot find GEOGRID.TBL at {} ...".format(src)
                 geogridFolder = os.path.join(run_dir_with_date,'geogrid')
                 if not os.path.exists(geogridFolder):
-                    os.mkdir(geogridFolder)
+                    mkdir_p(geogridFolder)
                 ##
                 dst = os.path.join(run_dir_with_date,'geogrid','GEOGRID.TBL')
                 if os.path.exists(dst): os.remove(dst)
@@ -377,7 +387,7 @@ for ind_job in range(number_of_jobs):
             ##
             print "\tCheck that the met_em files exist"
             if not os.path.exists(config["metem_dir"]):
-                os.mkdir(config["metem_dir"])
+                mkdir_p(config["metem_dir"])
                 metemFilesExist = False
             else:
                 metemFilesExist = True
@@ -431,7 +441,7 @@ for ind_job in range(number_of_jobs):
 
                         sstDir = 'sst_tmp'
                         if not os.path.exists(sstDir):
-                            os.mkdir(sstDir)
+                            mkdir_p(sstDir)
                         ##
                         for iDayWps in range(nDaysWps):
                             wpsDate = wpsStrDate + datetime.timedelta(days = iDayWps)
@@ -508,7 +518,7 @@ for ind_job in range(number_of_jobs):
 
                     analysisDir = 'analysis_tmp'
                     if not os.path.exists(analysisDir):
-                        os.mkdir(analysisDir)
+                        mkdir_p(analysisDir)
 
                     ## find the files matching the analysis pattern
                     patternTypes = ["analysis_pattern_surface", "analysis_pattern_upper"]
@@ -664,7 +674,7 @@ for ind_job in range(number_of_jobs):
                 print "\t\tRun metgrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
                 metgriddir = os.path.join(run_dir_with_date,'metgrid')
                 if not os.path.exists(metgriddir):
-                    os.mkdir(metgriddir)
+                    mkdir_p(metgriddir)
                 WPSnml['metgrid']['fg_name']    = ['ERA']
                 if config['use_high_res_sst_data']:
                     WPSnml['metgrid']['fg_name'].append('SST')
@@ -727,6 +737,17 @@ for ind_job in range(number_of_jobs):
                     if not os.path.exists(dst):
                         os.symlink(src, dst)
 
+    ## find a met_em file and read the number of atmospheric and soil levels
+    metempattern = os.path.join(config["metem_dir"],"met_em.d*.nc")
+    ## 
+    metemfiles = glob.glob(metempattern)
+    assert len(metemfiles) > 0, "No met_em files found..."
+    metemfile = metemfiles[0]
+    nc = netCDF4.Dataset(metemfile)
+    nz_metem = len(nc.dimensions['num_metgrid_levels'])
+    nz_soil = len(nc.dimensions['num_st_layers'])
+    nc.close()
+
     ## configure the WRF namelist
     print '\t\tconfigure the WRF namelist'
     ########## EDIT: the following are the substitutions used for the WRF namelist
@@ -746,7 +767,9 @@ for ind_job in range(number_of_jobs):
     ########## end edit section #####################################################
     ##
     WRFnml['time_control']['restart']      = config['restart']
-
+    ##
+    WRFnml['domains']['num_metgrid_levels'] = nz_metem
+    WRFnml['domains']['num_metgrid_soil_levels'] = nz_soil
     ##
     nmlfile = 'namelist.input'
     if os.path.exists(nmlfile): os.remove(nmlfile)
@@ -784,7 +807,7 @@ for ind_job in range(number_of_jobs):
         logfile = 'real_stderr_stdout.log'
         
         print "\t\tRun real.exe at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
-        p = subprocess.Popen(['./real.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['mpirun','-np','1','./real.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         ##
         f = open('real.log.stdout', 'w')

@@ -24,7 +24,7 @@
  truelat1  = -20.647798,  
  truelat2  = -20.647798,
  stand_lon = 116.784515,
- geog_data_path = '/projects/WRF/data/WPS_GEOG', 
+ geog_data_path = '/g/data/sx70/data/WPS_GEOG_20190418'
  ref_x = 56,
  ref_y = 56,
 /

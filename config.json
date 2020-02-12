@@ -80,8 +80,8 @@
     "analysis_source" : "ERAI",
 
     # if analysis_source is "FNL", you will need a login for CISL/rda.ucar.edu
-    rda_ucar_edu_email : "me@example.com",
-    rda_ucar_edu_pword : "password",
+    "rda_ucar_edu_email" : "me@example.com",
+    "rda_ucar_edu_pword" : "password",
     # if analysis_source is "FNL", it's a good idea to take a subset of the grib2 files
     "regional_subset_of_grib_data" : "true",
 

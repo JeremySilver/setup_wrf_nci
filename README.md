@@ -20,8 +20,8 @@ Procedure to run these scripts:
 0. [Apply for membership](https://my.nci.org.au/) to the 'sx70' NCI group to use the `WPS_GEOG` dataset. If you also want to use the ERAI analyses, you will need to apply for access to the 'ua8' and 'ub4' NCI groups.
 1. Edit the above scripts, particularly `config.json`, `namelist.wrf`, `namelist.wps`, `load_wrf_env.sh` (and possibly also `load_conda_env.sh`).
 2. Either submit the setup via `qsub submit_setup.sh` *or* do the following:
-..a. Log into one of the `copyq` nodes in interactive mode (via `qsub -I -q copyq -l wd,walltime=2:00:00,ncpus=1,mem=6GB`, for example).
-..b. Run `./submit_setup.sh` on the command line.
+..a. Log into one of the `copyq` nodes in interactive mode (via `qsub -I -q copyq -l wd,walltime=2:00:00,ncpus=1,mem=6GB -l storage=scratch/${PROJECT}+gdata/sx70+gdata/hh5`, for example).
+..b. Run `./submit_setup.sh` on the command line. Before doing this, replace `${PROJECT}` in the `submit_setup.sh` script, with your `${PROJECT}` shell environment variable - this can be found in your `${HOME}/.config/gadi-login.conf` file.
 
 The python script does the following:
 * Reads the `config.json` configuration file

@@ -6,6 +6,7 @@
 #PBS -j oe
 #PBS -q copyq
 #PBS -l wd
+#PBS -l storage=scratch/${PROJECT}+gdata/sx70+gdata/hh5
 
 source load_conda_env.sh
 

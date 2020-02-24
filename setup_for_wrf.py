@@ -78,8 +78,20 @@ while iterationCount < 10:
     else:
         break
     ##
-    print config["namelist_wps"]
     iterationCount += 1
+
+## parameters that should agree for the WRF and WPS namelists
+namelistParamsThatShouldAgree = [
+    {'wrf_var': 'max_dom','wrf_group': 'domains', 'wps_var': 'max_dom','wps_group': 'share'},
+    {'wrf_var': 'interval_seconds','wrf_group': 'time_control', 'wps_var': 'interval_seconds','wps_group': 'share'},
+    {'wrf_var': 'parent_id','wrf_group': 'domains', 'wps_var': 'parent_id','wps_group': 'geogrid'}, 
+    {'wrf_var': 'parent_grid_ratio','wrf_group': 'domains', 'wps_var': 'parent_grid_ratio','wps_group': 'geogrid'}, 
+    {'wrf_var': 'i_parent_start','wrf_group': 'domains', 'wps_var': 'i_parent_start','wps_group': 'geogrid'}, 
+    {'wrf_var': 'j_parent_start','wrf_group': 'domains', 'wps_var': 'j_parent_start','wps_group': 'geogrid'}, 
+    {'wrf_var': 'e_we','wrf_group': 'domains', 'wps_var': 'e_we','wps_group': 'geogrid'}, 
+    {'wrf_var': 'e_sn','wrf_group': 'domains', 'wps_var': 'e_sn','wps_group': 'geogrid'}, 
+    {'wrf_var': 'dx','wrf_group': 'domains', 'wps_var': 'dx','wps_group': 'geogrid'}, 
+    {'wrf_var': 'dy','wrf_group': 'domains', 'wps_var': 'dy','wps_group': 'geogrid'}]
 
 assert iterationCount < 10, "Config key substitution exceeded iteration limit..."
 
@@ -241,6 +253,36 @@ assert os.path.exists(WRFnmlPath),"File WRF namelist not found at {}".format(WRF
 ## read the WPS
 WPSnml = f90nml.read(WPSnmlPath)
 WRFnml = f90nml.read(WRFnmlPath)
+
+## check that the parameters do agree between the WRF and WPS namelists
+print '\t\tCheck for consistency between key parameters of the WRF and WPS namelists'
+for paramDict in namelistParamsThatShouldAgree:
+    WRFval = WRFnml[paramDict['wrf_group']][paramDict['wrf_var']]
+    WPSval = WPSnml[paramDict['wps_group']][paramDict['wps_var']]
+    ## the dx,dy variables need special treatment - they are handled differently in the two namelists
+    if paramDict['wrf_var'] in ['dx','dy']:
+        if WPSnml['share']['max_dom'] == 1:
+            if type(WRFval) == type([]):
+                assert WRFval[0] == WPSval, "Mismatched values for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+            else:
+                assert WRFval == WPSval, "Mismatched values for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+        else:
+            expectedVal = [float(WPSnml['geogrid'][paramDict['wps_var']])]
+            for idom in range(1,WPSnml['share']['max_dom']):
+                try:
+                    expectedVal.append(expectedVal[-1]/float(WPSnml['geogrid']['parent_grid_ratio'][idom]))
+                except:
+                    pdb.set_trace()
+            ##
+            assert len(WRFval) == len(expectedVal), "Mismatched length for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+            assert all([a == b for a,b in zip(WRFval,expectedVal)]), "Mismatched values for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+    else:
+        assert type(WRFval) == type(WPSval), "Mismatched type for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+        if type(WRFval) == type([]):
+            assert len(WRFval) == len(WPSval), "Mismatched length for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+            assert all([a == b for a,b in zip(WRFval,WPSval)]), "Mismatched values for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
+        else:
+            assert WRFval == WPSval, "Mismatched values for variable {} between the WRF and WPS namelists".format(paramDict['wrf_var'])
 
 ## get the number of domains
 nDom = WPSnml['share']['max_dom']
@@ -828,7 +870,6 @@ for ind_job in range(number_of_jobs):
         if os.path.exists('metgrid'): shutil.rmtree('metgrid')
         if os.path.exists('metgrid.exe'): os.remove('metgrid.exe')
         if os.path.exists('ungrib.exe'): os.remove('ungrib.exe')
-        purge(run_dir_with_date, 'met_em*')
 
         ## optionally delete the met_em files once they have been used
         if config['delete_metem_files']:

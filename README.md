@@ -1,4 +1,4 @@
-# WRF coordination scripts
+# WRF coordination scripts for NCI (Gadi)
 
 **Updated to run on Gadi: these scripts no longer work on Raijin**
 

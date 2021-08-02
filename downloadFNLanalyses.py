@@ -37,13 +37,13 @@ def downloadFNL(email,pswd,targetDir,times):
         List of downloaded files
 
     """
-    print 'in downloadFNL'
+    print('in downloadFNL')
     oldDir = os.getcwd()
     ## check that the target directory is indeed a directory
     assert os.path.exists(targetDir) and os.path.isdir(targetDir), "Target directory {} not found...".format(targetDir)
     os.chdir(targetDir)
 
-    print 'authenticate credentials'
+    print('authenticate credentials')
     url = 'https://rda.ucar.edu/cgi-bin/login'
     values = {'email' : email, 'passwd' : pswd, 'action' : 'login'}
     # Authenticate
@@ -63,7 +63,7 @@ def downloadFNL(email,pswd,targetDir,times):
         filepath = time.strftime('%Y/%Y%m/gdas1.fnl0p25.%Y%m%d%H.f00.grib2')
         filename=dspath+filepath
         file_base = os.path.basename(filepath)
-        print 'Downloading',file_base
+        print('Downloading',file_base)
         req = requests.get(filename, cookies = ret.cookies, allow_redirects=True, stream=True)
         filesize = int(req.headers['Content-length'])
         with open(file_base, 'wb') as outfile:

@@ -34,9 +34,9 @@ try:
     f = open(configFile,'rt')
     input_str = f.read()
     f.close()
-except Exception,e:
-    print "Problem reading in configuration file"
-    print str(e)
+except Exception as e:
+    print("Problem reading in configuration file")
+    print(str(e))
     sys.exit()
 
     
@@ -45,25 +45,25 @@ try:
     ## strip out the comments
     input_str = re.sub(r'#.*\n', '\n', input_str)
     config = json.loads(input_str)
-except Exception,e:
-    print "Problem parsing in configuration file"
-    print str(e)
+except Exception as e:
+    print("Problem parsing in configuration file")
+    print(str(e))
     sys.exit()
 
 ## add some environment variables to the config that may be needed for substitutions
 envVarsToInclude = config["environment_variables_for_substitutions"].split(',')
 for envVarToInclude in envVarsToInclude:
-    if envVarToInclude in os.environ.keys():
+    if envVarToInclude in list(os.environ.keys()):
         config[envVarToInclude] = os.environ[envVarToInclude]
 
 ## do the substitutions
-avail_keys = config.keys()
+avail_keys = list(config.keys())
 iterationCount = 0
 while iterationCount < 10:
     ## check if any entries in the config dictionary need populating
     foundToken = False
-    for key, value in config.iteritems():
-        if isinstance(value, basestring):
+    for key, value in config.items():
+        if isinstance(value, str):
             if (value.find('${') >= 0):
                 foundToken = True
     ##
@@ -72,7 +72,7 @@ while iterationCount < 10:
             key = '${%s}' % avail_key
             value = config[avail_key]
             for k in avail_keys:
-                if isinstance(config[k], basestring):
+                if isinstance(config[k], str):
                     if config[k].find(key) >= 0:
                         config[k] = config[k].replace(key,value)
     else:
@@ -127,9 +127,9 @@ for scriptName in scriptNames:
         f = open(config[templateScript],'rt')
         scripts[scriptName] = f.readlines()
         f.close()
-    except Exception,e:
-        print "Problem reading in template {} script".format(scriptName)
-        print str(e)
+    except Exception as e:
+        print("Problem reading in template {} script".format(scriptName))
+        print(str(e))
 
 ## make directories recursively, and safely
 ## this function is a copy of: https://stackoverflow.com/a/600612/356426
@@ -202,9 +202,9 @@ def compressNCfile(filename,ppc = None):
     '''
     
     if os.path.exists(filename):
-        print "Compress file {} with ncks".format(filename)
+        print("Compress file {} with ncks".format(filename))
         command = 'ncks -4 -L4 -O {} {}'.format(filename, filename)
-        print '\t'+command
+        print('\t'+command)
         commandList = command.split(' ')
         if ppc is None:
             ppcText = ''
@@ -221,11 +221,11 @@ def compressNCfile(filename,ppc = None):
         p = subprocess.Popen(commandList, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if len(stderr) > 0 or len(stdout) > 0:
-            print "stdout = " + stdout
-            print "stderr = " + stderr
+            print("stdout = " + stdout)
+            print("stderr = " + stderr)
             raise RuntimeError("Error from ncks...")
     else:
-        print "File {} not found...".format(filename)
+        print("File {} not found...".format(filename))
 
 
 
@@ -233,9 +233,9 @@ def compressNCfile(filename,ppc = None):
 try:
     start_date = process_date_string(config['start_date'])
     end_date   = process_date_string(config['end_date'])
-except Exception,e:
-    print "Problem parsing start/end times"
-    print str(e)
+except Exception as e:
+    print("Problem parsing start/end times")
+    print(str(e))
 
 ## check that the dates are in the right order
 assert end_date > start_date, "End date should be after start date"
@@ -255,7 +255,7 @@ WPSnml = f90nml.read(WPSnmlPath)
 WRFnml = f90nml.read(WRFnmlPath)
 
 ## check that the parameters do agree between the WRF and WPS namelists
-print '\t\tCheck for consistency between key parameters of the WRF and WPS namelists'
+print('\t\tCheck for consistency between key parameters of the WRF and WPS namelists')
 for paramDict in namelistParamsThatShouldAgree:
     WRFval = WRFnml[paramDict['wrf_group']][paramDict['wrf_var']]
     WPSval = WPSnml[paramDict['wps_group']][paramDict['wps_var']]
@@ -294,7 +294,7 @@ run_length_total_hours = config["num_hours_per_run"] + config["num_hours_spin_up
 if not os.path.exists(config["run_dir"]):
     mkdir_p(config["run_dir"])
 
-print '\t\tGenerate the main coordination script'
+print('\t\tGenerate the main coordination script')
 
 ## write out the main coordination script
 
@@ -310,7 +310,7 @@ substitutions = {'STARTDATE'   : start_date.strftime('%Y%m%d%H'),
 
 ## do the substitutions
 thisScript = copy.copy(scripts['main'])
-for avail_key in substitutions.keys():
+for avail_key in list(substitutions.keys()):
     key = '${%s}' % avail_key
     value = substitutions[avail_key]
     thisScript = [ l.replace(key,value) for l in thisScript ]
@@ -329,7 +329,7 @@ for ind_job in range(number_of_jobs):
     job_start = start_date + datetime.timedelta(seconds = 3600 * ind_job * int(config["num_hours_per_run"])) - datetime.timedelta(seconds = 3600 * int(config["num_hours_spin_up"]))
     job_start_usable = start_date + datetime.timedelta(seconds = 3600 * ind_job * int(config["num_hours_per_run"]))
     job_end   = start_date + datetime.timedelta(seconds = 3600 * (ind_job+1) * int(config["num_hours_per_run"]))
-    print "Start preparation for the run beginning {}".format(job_start_usable.date())
+    print("Start preparation for the run beginning {}".format(job_start_usable.date()))
     ##
     yyyymmddhh_start = job_start_usable.strftime('%Y%m%d%H')
     run_dir_with_date = os.path.join(config["run_dir"],yyyymmddhh_start)
@@ -338,7 +338,7 @@ for ind_job in range(number_of_jobs):
     ##
     os.chdir(run_dir_with_date)
     ## check that the WRF initialisation files exist
-    print "\tCheck that the WRF initialisation files exist"
+    print("\tCheck that the WRF initialisation files exist")
     wrfbdyPath = os.path.join(run_dir_with_date,'wrfbdy_d01') ## check for the BCs
     wrfInitFilesExist = os.path.exists(wrfbdyPath)
     for iDom in range(nDom):
@@ -350,10 +350,10 @@ for ind_job in range(number_of_jobs):
     ##
     if not config['only_edit_namelists']:
         if not wrfInitFilesExist:
-            print "\t\tThe WRF initialisation files did not exist..."
+            print("\t\tThe WRF initialisation files did not exist...")
             # Check that the topography files exist
             geoFilesExist = True
-            print "\tCheck that the geo_em files exist"
+            print("\tCheck that the geo_em files exist")
             for iDom in range(nDom):
                 dom = 'd0{}'.format(iDom+1)
                 geoFile = 'geo_em.{}.nc'.format(dom)
@@ -362,9 +362,9 @@ for ind_job in range(number_of_jobs):
                     geoFilesExist = False
             ## If not, produce them
             if geoFilesExist:
-                print "\t\tThe geo_em files were indeed found"
+                print("\t\tThe geo_em files were indeed found")
             else:
-                print "\t\tThe geo_em files did not exist - create them"
+                print("\t\tThe geo_em files did not exist - create them")
                 ## copy the WPS namelist
                 src = WPSnmlPath
                 dst = os.path.join(run_dir_with_date,'namelist.wps')
@@ -387,7 +387,7 @@ for ind_job in range(number_of_jobs):
                     os.symlink(src, dst)
                 ## move to the directory and run geogrid.exe
                 os.chdir(run_dir_with_date)
-                print "\t\tRun geogrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                print("\t\tRun geogrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(['./geogrid.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
                 ##
@@ -407,7 +407,7 @@ for ind_job in range(number_of_jobs):
                 dst = 'namelist.wps.geogrid'
                 os.rename(src, dst)
                 ## compress the output
-                print "\tCompress the geo_em files"
+                print("\tCompress the geo_em files")
                 for iDom in range(nDom):
                     dom = 'd0{}'.format(iDom+1)
                     geoFile = 'geo_em.{}.nc'.format(dom)
@@ -427,7 +427,7 @@ for ind_job in range(number_of_jobs):
                 if not os.path.exists(dst):
                     os.symlink(src, dst)
             ##
-            print "\tCheck that the met_em files exist"
+            print("\tCheck that the met_em files exist")
             if not os.path.exists(config["metem_dir"]):
                 mkdir_p(config["metem_dir"])
                 metemFilesExist = False
@@ -443,7 +443,7 @@ for ind_job in range(number_of_jobs):
                         metemFilesExist = metemFilesExist and os.path.exists(metem_file)
             ##
             if not metemFilesExist:
-                print "\t\tThe met_em files did not exist - create them"
+                print("\t\tThe met_em files did not exist - create them")
                 ##
                 os.chdir(run_dir_with_date)
                 ## deal with SSTs first
@@ -506,7 +506,7 @@ for ind_job in range(number_of_jobs):
                         wpsEndDateEnd = wpsEndDate.strftime('%Y-%m-%d_%H:%M:%S')
                         ##
                         purge(run_dir_with_date, 'GRIBFILE*')
-                        print "\t\tRun link_grib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                        print("\t\tRun link_grib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                         p = subprocess.Popen(['./link_grib.csh',os.path.join(sstDir,'*')], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         stdout, stderr = p.communicate()
                         ##
@@ -533,7 +533,7 @@ for ind_job in range(number_of_jobs):
                         ## run ungrib on the SST files
                         ## logfile = 'ungrib_sst.log'
                         ## output_f = open(logfile, 'w')
-                        print "\t\tRun ungrib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                        print("\t\tRun ungrib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                         p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         stdout, stderr = p.communicate()
                         # output_f.flush()
@@ -610,7 +610,7 @@ for ind_job in range(number_of_jobs):
                     ## if the FNL data exists, don't bother downloading
                     allFNLfilesExist = all([os.path.exists(FNLfile) for FNLfile in FNLfiles])
                     if allFNLfilesExist:
-                        print "\t\tAll FNL files were found - do not repeat the download"
+                        print("\t\tAll FNL files were found - do not repeat the download")
                     else:
                         ## otherwise get it all
                         FNLfiles = downloadFNL(email = config['rda_ucar_edu_email'],
@@ -634,7 +634,7 @@ for ind_job in range(number_of_jobs):
                         ## use wgrib2 that 
                         for FNLfile in FNLfiles:
                             tmpfile = os.path.join('/tmp',os.path.basename(FNLfile))
-                            print "\t\tSubset the grib file",os.path.basename(FNLfile)
+                            print("\t\tSubset the grib file",os.path.basename(FNLfile))
                             stdout, stderr = subprocess.Popen(['wgrib2',FNLfile,'-small_grib',geoStrs['XLONG_M'], geoStrs['XLAT_M'],tmpfile], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
                             if len(stderr) > 0:
                                 raise RuntimeError("Errors found when running wgrib2...")
@@ -658,7 +658,7 @@ for ind_job in range(number_of_jobs):
                 WPSnml.write('namelist.wps')
                 ##
                 purge(run_dir_with_date, 'GRIBFILE*')
-                print "\t\tRun link_grib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                print("\t\tRun link_grib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(linkGribCmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
                 ##
@@ -688,7 +688,7 @@ for ind_job in range(number_of_jobs):
 
                 purge(run_dir_with_date, 'ERA:*')
                 ## with open('ungrib.log.era', 'w') as output_f:
-                print "\t\tRun ungrib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                print("\t\tRun ungrib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
                 ##
@@ -713,7 +713,7 @@ for ind_job in range(number_of_jobs):
                 #############
                 # Run metgrid
                 #############
-                print "\t\tRun metgrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+                print("\t\tRun metgrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 metgriddir = os.path.join(run_dir_with_date,'metgrid')
                 if not os.path.exists(metgriddir):
                     mkdir_p(metgriddir)
@@ -766,7 +766,7 @@ for ind_job in range(number_of_jobs):
     
             ## link to the met_em files
             os.chdir(run_dir_with_date)
-            print '\t\tlink to the met_em files'
+            print('\t\tlink to the met_em files')
             for hour in range(0,run_length_total_hours+1,6):
                 metem_time = job_start + datetime.timedelta(seconds = hour*3600)
                 metem_time_str = metem_time.strftime('%Y-%m-%d_%H:%M:%S')
@@ -791,7 +791,7 @@ for ind_job in range(number_of_jobs):
     nc.close()
 
     ## configure the WRF namelist
-    print '\t\tconfigure the WRF namelist'
+    print('\t\tconfigure the WRF namelist')
     ########## EDIT: the following are the substitutions used for the WRF namelist
     WRFnml['time_control']['start_year']   = [job_start.year]   * nDom
     WRFnml['time_control']['start_month']  = [job_start.month]  * nDom
@@ -848,7 +848,7 @@ for ind_job in range(number_of_jobs):
         ##
         logfile = 'real_stderr_stdout.log'
         
-        print "\t\tRun real.exe at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+        print("\t\tRun real.exe at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
         p = subprocess.Popen(['mpirun','-np','1','./real.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         ##
@@ -876,7 +876,7 @@ for ind_job in range(number_of_jobs):
             purge(config["metem_dir"], 'met_em*')
 
     ## generate the run and cleanup scripts
-    print '\t\tGenerate the run and cleanup script'
+    print('\t\tGenerate the run and cleanup script')
 
     ########## EDIT: the following are the substitutions used for the per-run cleanup and run scripts
     substitutions = {'RUN_DIR': run_dir_with_date,
@@ -889,7 +889,7 @@ for ind_job in range(number_of_jobs):
     for dailyScriptName in dailyScriptNames:
         ## do the substitutions
         thisScript = copy.copy(scripts[dailyScriptName])
-        for avail_key in substitutions.keys():
+        for avail_key in list(substitutions.keys()):
             key = '${%s}' % avail_key
             value = substitutions[avail_key]
             thisScript = [ l.replace(key,value) for l in thisScript ]

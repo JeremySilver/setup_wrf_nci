@@ -159,18 +159,18 @@ def process_date_string(datestring):
 
 def purge(dir, pattern):
     for f in os.listdir(dir):
-        if re.search(pattern, f) > 0:
+        if re.search(pattern, f) is not None:
+            print('deleting:',pattern,'- file:',f)
             os.remove(os.path.join(dir, f))
 
 def move_pattern_to_dir(sourceDir, pattern, destDir):
     for f in os.listdir(sourceDir):
-        if re.search(pattern, f) > 0:
+        if re.search(pattern, f) is not None:
             os.rename(os.path.join(sourceDir, f), os.path.join(destDir, f))
 
 def link_pattern_to_dir(sourceDir, pattern, destDir):
     for f in os.listdir(sourceDir):
-        ## pdb.set_trace()
-        if re.search(pattern, f) > 0:
+        if re.search(pattern, f) is not None:
             src = os.path.join(sourceDir, f)
             dst = os.path.join(destDir, f)
             if not os.path.exists(dst): os.symlink(src, dst)
@@ -317,7 +317,7 @@ for avail_key in list(substitutions.keys()):
 ## write out the lines
 scriptFile = '{}.sh'.format('main')
 scriptPath = os.path.join(config['run_dir'], scriptFile)
-f = file(scriptPath,'w')
+f = open(scriptPath,'w')
 f.writelines(thisScript)
 f.close()
 ## make executable
@@ -519,7 +519,7 @@ for ind_job in range(number_of_jobs):
                         f.close()
                         ## check that it ran
                         ## time.sleep(0.2)
-                        gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) > 0 ]
+                        gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) is not None ]
                         if len(gribmatches) == 0:
                             raise RuntimeError("Gribfiles not linked successfully...")
                         ## link to the SST Vtable
@@ -671,7 +671,7 @@ for ind_job in range(number_of_jobs):
                 f.close()
 
                 ## check that it ran
-                gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) > 0 ]
+                gribmatches = [f for f in os.listdir(run_dir_with_date) if re.search('GRIBFILE', f) is not None ]
                 if len(gribmatches) == 0:
                     raise RuntimeError("Gribfiles not linked successfully...")
 
@@ -896,7 +896,7 @@ for ind_job in range(number_of_jobs):
         ## write out the lines
         scriptFile = '{}.sh'.format(dailyScriptName)
         scriptPath = os.path.join(run_dir_with_date, scriptFile)
-        f = file(scriptPath,'w')
+        f = open(scriptPath,'w')
         f.writelines(thisScript)
         f.close()
         ## make executable

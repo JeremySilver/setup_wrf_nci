@@ -12,8 +12,7 @@ module purge
 module load pbs
 module load dot
 module load nco
-module use /g/data3/hh5/public/modules
-module load conda/analysis27
+module load netcdf
 
 ulimit -s unlimited
 

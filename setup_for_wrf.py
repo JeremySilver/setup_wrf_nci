@@ -794,16 +794,24 @@ for ind_job in range(number_of_jobs):
                     if not os.path.exists(dst):
                         os.symlink(src, dst)
 
-    ## find a met_em file and read the number of atmospheric and soil levels
-    metempattern = os.path.join(config["metem_dir"],"met_em.d*.nc")
-    ## 
-    metemfiles = glob.glob(metempattern)
-    assert len(metemfiles) > 0, "No met_em files found..."
-    metemfile = metemfiles[0]
-    nc = netCDF4.Dataset(metemfile)
-    nz_metem = len(nc.dimensions['num_metgrid_levels'])
-    nz_soil = len(nc.dimensions['num_st_layers'])
-    nc.close()
+    if (not config['only_edit_namelists']) and (not wrfInitFilesExist):
+        ## find a met_em file and read the number of atmospheric and soil levels
+        metempattern = os.path.join(config["metem_dir"],"met_em.d*.nc")
+        ## 
+        metemfiles = glob.glob(metempattern)
+        assert len(metemfiles) > 0, "No met_em files found..."
+        metemfile = metemfiles[0]
+        nc = netCDF4.Dataset(metemfile)
+        nz_metem = len(nc.dimensions['num_metgrid_levels'])
+        nz_soil = len(nc.dimensions['num_st_layers'])
+        nc.close()
+    else:
+        if config['analysis_source'] == 'ERAI':
+            nz_metem = 38
+            nz_soil = 4
+        elif config['analysis_source'] == 'FNL':
+            nz_metem = 27
+            nz_soil = 4
 
     ## configure the WRF namelist
     print('\t\tconfigure the WRF namelist')
@@ -891,6 +899,9 @@ for ind_job in range(number_of_jobs):
         ## optionally delete the met_em files once they have been used
         if config['delete_metem_files']:
             purge(config["metem_dir"], 'met_em*')
+
+    ## clean up the links to the met_em files regardless, as they are no longer needed
+    purge(run_dir_with_date, 'met_em*')
 
     ## generate the run and cleanup scripts
     print('\t\tGenerate the run and cleanup script')

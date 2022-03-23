@@ -11,11 +11,11 @@
 module purge
 module load dot
 module load pbs
-source load_wrf_env.sh
-
 
 ulimit -s unlimited
 cd ${RUN_DIR}
+
+source load_wrf_env.sh
 
 echo running with $PBS_NCPUS mpi ranks
 time mpirun -np $PBS_NCPUS ./wrf.exe >& wrf.log

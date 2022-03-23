@@ -157,6 +157,11 @@ def process_date_string(datestring):
     ##
     return date
 
+def decode_bytes(x):
+    if type(x) == bytes:
+        x = x.decode('utf-8')
+    return x
+
 def purge(dir, pattern):
     for f in os.listdir(dir):
         if re.search(pattern, f) is not None:
@@ -220,6 +225,8 @@ def compressNCfile(filename,ppc = None):
         ##
         p = subprocess.Popen(commandList, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
+        stdout = decode_bytes(stdout) 
+        stderr = decode_bytes(stderr)
         if len(stderr) > 0 or len(stdout) > 0:
             print("stdout = " + stdout)
             print("stderr = " + stderr)
@@ -390,6 +397,8 @@ for ind_job in range(number_of_jobs):
                 print("\t\tRun geogrid at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(['./geogrid.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
+                stdout = decode_bytes(stdout) 
+                stderr = decode_bytes(stderr)
                 ##
                 f = open('geogrid.log.stdout', 'w')
                 f.writelines(stdout)
@@ -509,6 +518,8 @@ for ind_job in range(number_of_jobs):
                         print("\t\tRun link_grib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                         p = subprocess.Popen(['./link_grib.csh',os.path.join(sstDir,'*')], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         stdout, stderr = p.communicate()
+                        stdout = decode_bytes(stdout) 
+                        stderr = decode_bytes(stderr)
                         ##
                         f = open('link_grib_sst.log.stdout', 'w')
                         f.writelines(stdout)
@@ -531,14 +542,11 @@ for ind_job in range(number_of_jobs):
                         purge(run_dir_with_date, 'SST:*')
                         purge(run_dir_with_date, 'PFILE:*')
                         ## run ungrib on the SST files
-                        ## logfile = 'ungrib_sst.log'
-                        ## output_f = open(logfile, 'w')
                         print("\t\tRun ungrib for the SST data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                         p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         stdout, stderr = p.communicate()
-                        # output_f.flush()
-                        ## output_f.close()
-                        ## time.sleep(0.5)
+                        stdout = decode_bytes(stdout) 
+                        stderr = decode_bytes(stderr)
                         ##
                         f = open('ungrib_sst.log.stdout', 'w')
                         f.writelines(stdout)
@@ -658,15 +666,17 @@ for ind_job in range(number_of_jobs):
                 WPSnml.write('namelist.wps')
                 ##
                 purge(run_dir_with_date, 'GRIBFILE*')
-                print("\t\tRun link_grib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
+                print("\t\tRun link_grib for the FNL data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(linkGribCmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
+                stdout = decode_bytes(stdout) 
+                stderr = decode_bytes(stderr)
                 ##
-                f = open('link_grib_era.log.stdout', 'w')
+                f = open('link_grib_fnl.log.stdout', 'w')
                 f.writelines(stdout)
                 f.close()
                 ##
-                f = open('link_grib_era.log.stderr', 'w')
+                f = open('link_grib_fnl.log.stderr', 'w')
                 f.writelines(stderr)
                 f.close()
 
@@ -691,6 +701,8 @@ for ind_job in range(number_of_jobs):
                 print("\t\tRun ungrib for the ERA data at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
                 p = subprocess.Popen(['./ungrib.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
+                stdout = decode_bytes(stdout) 
+                stderr = decode_bytes(stderr)
                 ##
                 f = open('ungrib_era.log.stdout', 'w')
                 f.writelines(stdout)
@@ -703,6 +715,7 @@ for ind_job in range(number_of_jobs):
                 ## FIXME: check that it worked
                 matches = grep_lines('Successful completion of ungrib', stdout)
                 if len(matches) == 0:
+                    print(stdout)
                     raise RuntimeError("Success message not found in ungrib logfile...")
 
                 ## if we are using the FNL analyses, delete the downloaded FNL files
@@ -738,6 +751,8 @@ for ind_job in range(number_of_jobs):
                 ## with open(logfile, 'w') as output_f:
                 p = subprocess.Popen(['./metgrid.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 stdout, stderr = p.communicate()
+                stdout = decode_bytes(stdout) 
+                stderr = decode_bytes(stderr)
                 ##
                 f = open('metgrid.log.stdout', 'w')
                 f.writelines(stdout)
@@ -851,6 +866,8 @@ for ind_job in range(number_of_jobs):
         print("\t\tRun real.exe at {}".format(datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')))
         p = subprocess.Popen(['mpirun','-np','1','./real.exe'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
+        stdout = decode_bytes(stdout) 
+        stderr = decode_bytes(stderr)
         ##
         f = open('real.log.stdout', 'w')
         f.writelines(stdout)
